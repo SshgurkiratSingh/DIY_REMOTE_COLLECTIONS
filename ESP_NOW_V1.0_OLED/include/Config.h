@@ -1,0 +1,69 @@
+#ifndef CONFIG_H
+#define CONFIG_H
+
+#include <Arduino.h>
+
+// --- Analog Inputs (ADC1) ---
+#define PIN_JOY_VRY 33
+#define PIN_POT 32
+#define PIN_JOY_VRX 35
+
+// --- Digital Inputs ---
+#define PIN_ENC_CLK 27
+#define PIN_ENC_DT 14
+#define PIN_ENC_SW 13
+#define PIN_TOGGLE_1 26
+#define PIN_TOGGLE_2 25
+#define PIN_PUSH_1 19
+#define PIN_PUSH_2 15
+
+// --- Outputs ---
+#define PIN_OLED_SDA 21
+#define PIN_OLED_SCL 22
+#define PIN_LED_YELLOW 23
+#define PIN_LED_GREEN 18
+
+// --- Display Config ---
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64 // Or 64 based on your actual display
+#define OLED_ADDR 0x3C
+
+// --- Data Packet ---
+typedef struct struct_message
+{
+    uint16_t joyX;
+    uint16_t joyY;
+    uint16_t potValue;
+    int32_t encoderPos;
+    bool encSw;
+    bool toggle1;
+    bool toggle2;
+    bool push1;
+    bool push2;
+} struct_message;
+
+#define MAX_TARGETS 5
+
+struct TargetNode
+{
+    uint8_t mac[6];
+    char name[16];
+    bool active;
+};
+
+// --- System Configuration & NVS ---
+struct SystemConfig
+{
+    uint16_t deadzone;
+    uint16_t centerX;
+    uint16_t centerY;
+    bool invertX;
+    bool invertY;
+    uint8_t txRateHz;
+    bool rxEnabled;
+};
+
+// Replace with receiver MAC address
+extern const uint8_t broadcastAddress[6];
+
+#endif
