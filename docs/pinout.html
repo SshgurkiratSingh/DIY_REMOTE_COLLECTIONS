@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Pinout Reference</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="page-shell">
+    <nav class="topbar">
+      <div class="brand">ESP-NOW Remote</div>
+      <div class="nav-links">
+          <a href="index.html#overview">Overview</a>
+          <a href="index.html#firmware">Firmware</a>
+          <a href="index.html#setup">Setup</a>
+          <a href="index.html#packets">Packets</a>
+          <a href="changelog.html">Changelog</a>
+          <a href="setup-wizard.html">Wizard</a>
+          <a href="pinout.html">Pinout</a>
+</div>
+      <button id="theme-toggle" class="theme-btn" type="button">Light</button>
+    </nav>
+    <main>
+      <section class="section">
+        <div class="breadcrumbs"><a href="index.html">Home</a> / <span>Pinout Reference</span></div>
+        <article class="content-box" data-doc-content>
+          <h1>Pinout reference</h1>
+          <p class="lede">Consolidated wiring sheet for the main transmitter and direct receiver motor outputs.</p>
+          <h3>Transmitter (ESP_NOW_V1.2_OLED family)</h3>
+          <h4>Input and IO map</h4>
+          <div class="table-scroll"><table><thead><tr><th>Function</th><th>Pin</th></tr></thead><tbody>
+            <tr><td>Joystick Y</td><td>33</td></tr>
+            <tr><td>Potentiometer</td><td>32</td></tr>
+            <tr><td>Joystick X</td><td>35</td></tr>
+            <tr><td>Encoder CLK</td><td>27</td></tr>
+            <tr><td>Encoder DT</td><td>14</td></tr>
+            <tr><td>Encoder Switch</td><td>13</td></tr>
+            <tr><td>Toggle 1</td><td>26</td></tr>
+            <tr><td>Toggle 2</td><td>25</td></tr>
+            <tr><td>Push 1</td><td>19</td></tr>
+            <tr><td>Push 2</td><td>15</td></tr>
+            <tr><td>OLED SDA</td><td>21</td></tr>
+            <tr><td>OLED SCL</td><td>22</td></tr>
+            <tr><td>Yellow LED</td><td>23</td></tr>
+            <tr><td>Green LED</td><td>18</td></tr>
+          </tbody></table></div>
+          <h3>Direct receiver v2.0 motor map</h3>
+          <h4>PWM and enable lines</h4>
+          <div class="table-scroll"><table><thead><tr><th>Motor side</th><th>Signal</th><th>Pin</th></tr></thead><tbody>
+            <tr><td>Left</td><td>RPWM</td><td>18</td></tr>
+            <tr><td>Left</td><td>LPWM</td><td>19</td></tr>
+            <tr><td>Left</td><td>LEN</td><td>21</td></tr>
+            <tr><td>Left</td><td>REN</td><td>22</td></tr>
+            <tr><td>Right</td><td>RPWM</td><td>25</td></tr>
+            <tr><td>Right</td><td>LPWM</td><td>26</td></tr>
+            <tr><td>Right</td><td>LEN</td><td>27</td></tr>
+            <tr><td>Right</td><td>REN</td><td>14</td></tr>
+          </tbody></table></div>
+        </article>
+      </section>
+    </main>
+    <footer class="footer"><div class="footer-grid"><div><h3>Navigation</h3><p><a href="index.html">Main docs</a></p></div><div><h3>Related</h3><p><a href="setup-wizard.html">Setup wizard</a></p></div><div><h3>Updated</h3><p>2026-03-31</p></div></div></footer>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>

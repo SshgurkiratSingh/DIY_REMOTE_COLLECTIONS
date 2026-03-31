@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Setup Wizard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="page-shell">
+    <nav class="topbar">
+      <div class="brand">ESP-NOW Remote</div>
+      <div class="nav-links">
+          <a href="index.html#overview">Overview</a>
+          <a href="index.html#firmware">Firmware</a>
+          <a href="index.html#setup">Setup</a>
+          <a href="index.html#packets">Packets</a>
+          <a href="changelog.html">Changelog</a>
+          <a href="setup-wizard.html">Wizard</a>
+          <a href="pinout.html">Pinout</a>
+</div>
+      <button id="theme-toggle" class="theme-btn" type="button">Light</button>
+    </nav>
+    <main>
+      <section class="section">
+        <div class="breadcrumbs"><a href="index.html">Home</a> / <span>Setup Wizard</span></div>
+        <article class="content-box" data-doc-content>
+          <h1>Setup wizard</h1>
+          <p class="lede">Follow this checklist to bring both boards online with predictable results.</p>
+          <h3>Step 1 - Receiver first</h3>
+          <h4>Flash and monitor</h4>
+          <pre><code class="language-bash">cd ESP32_Receiver-Direct-v2.0
+pio run
+pio run --target upload
+pio device monitor</code></pre>
+          <h3>Step 2 - Capture MAC</h3>
+          <h4>Save receiver identifier</h4>
+          <p>Record the printed receiver MAC. You will enter this in AP portal on transmitter.</p>
+          <h3>Step 3 - Transmitter upload</h3>
+          <h4>Flash current main variant</h4>
+          <pre><code class="language-bash">cd ESP_NOW_V1.2_OLED
+pio run
+pio run --target upload</code></pre>
+          <h3>Step 4 - Pairing</h3>
+          <h4>AP portal flow</h4>
+          <ul>
+            <li>Open settings and select Add Tgt(AP).</li>
+            <li>Connect to SSID ESP-NOW-REMOTE (password 12345678).</li>
+            <li>Open http://192.168.4.1 and save target name + MAC.</li>
+          </ul>
+          <h3>Step 5 - Validation</h3>
+          <h4>Verify control + feedback</h4>
+          <p>Move joystick and toggles, confirm values are received and reply packets increment counters.</p>
+        </article>
+      </section>
+    </main>
+    <footer class="footer"><div class="footer-grid"><div><h3>Navigation</h3><p><a href="index.html">Main docs</a></p></div><div><h3>Related</h3><p><a href="pinout.html">Pinout</a></p></div><div><h3>Updated</h3><p>2026-03-31</p></div></div></footer>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>

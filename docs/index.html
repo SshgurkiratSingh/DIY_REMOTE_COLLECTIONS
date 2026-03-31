@@ -4,16 +4,11 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>ESP-NOW Remote Collection</title>
-    <meta
-      name="description"
-      content="Documentation site for the ESP32 ESP-NOW remote controller and receiver collection."
-    />
+    <meta name="description" content="Documentation site for the ESP32 ESP-NOW remote controller and receiver collection." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap"
-      rel="stylesheet"
-    />
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css" />
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
@@ -21,46 +16,41 @@
       <header class="hero">
         <nav class="topbar">
           <div class="brand">ESP-NOW Remote</div>
-          <div class="nav-links">
-            <a href="#overview">Overview</a>
-            <a href="#firmware">Firmware</a>
-            <a href="#setup">Setup</a>
-            <a href="#packets">Packets</a>
+          <div>
+            <div class="nav-links">
+          <a href="index.html#overview">Overview</a>
+          <a href="index.html#firmware">Firmware</a>
+          <a href="index.html#setup">Setup</a>
+          <a href="index.html#packets">Packets</a>
+          <a href="changelog.html">Changelog</a>
+          <a href="setup-wizard.html">Wizard</a>
+          <a href="pinout.html">Pinout</a>
+</div>
           </div>
+          <button id="theme-toggle" class="theme-btn" type="button" aria-label="Toggle theme">Light</button>
         </nav>
 
         <section class="hero-grid">
           <div class="hero-copy">
             <p class="eyebrow">ESP32 controller stack</p>
-            <h1>Handheld ESP-NOW remote firmware with OLED UI and receiver telemetry.</h1>
-            <p class="lede">
-              This repo bundles transmitter and receiver firmware variants for a DIY
-              ESP32 remote, including persistent target storage, a captive portal for
-              receiver registration, and a compact serial-debug receiver.
-            </p>
+            <h1>Comprehensive firmware docs for every folder in this repo.</h1>
+            <p class="lede">Browse all transmitter and receiver variants, compare capabilities, search documentation pages, and follow a setup workflow from flash to pairing.</p>
             <div class="hero-actions">
               <a class="button primary" href="https://github.com/SshgurkiratSingh/DIY_REMOTE_COLLECTIONS" target="_blank" rel="noreferrer">View Repository</a>
               <a class="button secondary" href="#setup">Quick Start</a>
             </div>
+            <div class="quick-links">
+              <a class="chip" href="esp-now-v1.2-oled.html">V1.2 Transmitter</a>
+              <a class="chip" href="esp32-receiver-direct-v2.0.html">Direct Receiver v2.0</a>
+              <a class="chip" href="arduino-bts-bridge-logic.html">BTS Bridge Logic</a>
+            </div>
           </div>
 
           <div class="hero-card">
-            <div class="stat">
-              <span class="stat-label">Main transmitter</span>
-              <strong>ESP_NOW_V1.2_OLED</strong>
-            </div>
-            <div class="stat">
-              <span class="stat-label">Main receiver</span>
-              <strong>ESP32_Receiver-Direct-v2.0</strong>
-            </div>
-            <div class="stat">
-              <span class="stat-label">Transport</span>
-              <strong>ESP-NOW</strong>
-            </div>
-            <div class="stat">
-              <span class="stat-label">Framework</span>
-              <strong>PlatformIO + Arduino</strong>
-            </div>
+            <div class="stat"><span class="stat-label">Main transmitter</span><strong>ESP_NOW_V1.2_OLED</strong></div>
+            <div class="stat"><span class="stat-label">Main receiver</span><strong>ESP32_Receiver-Direct-v2.0</strong></div>
+            <div class="stat"><span class="stat-label">Transport</span><strong>ESP-NOW</strong></div>
+            <div class="stat"><span class="stat-label">Framework</span><strong>PlatformIO + Arduino</strong></div>
           </div>
         </section>
       </header>
@@ -69,30 +59,27 @@
         <section id="overview" class="section">
           <div class="section-heading">
             <p class="eyebrow">Overview</p>
-            <h2>What’s in the project</h2>
+            <h2>What is included</h2>
+          </div>
+
+          <div class="search-shell">
+            <h3>Search Documentation</h3>
+            <input id="doc-search" type="search" placeholder="Search firmware, features, or terms like EMA, BTS7960, telemetry..." aria-label="Search docs" />
+            <ul id="search-results" class="search-results"></ul>
           </div>
 
           <div class="cards three-up">
             <article class="card">
-              <h3>Transmitter</h3>
-              <p>
-                Reads joystick, potentiometer, toggles, push buttons, and a rotary
-                encoder, then transmits a packed control frame over ESP-NOW.
-              </p>
+              <h3>Transmitter line</h3>
+              <p>From V1.0 baseline to V1.2 optimized release, with OLED menus, persistent settings, portal pairing, and filtered analog input handling.</p>
             </article>
             <article class="card">
-              <h3>Receiver</h3>
-              <p>
-                Accepts incoming control data, handles dual motor control directly via mapped pins (e.g. for BTS7960 drivers), prints it over serial, and returns a
-                small reply payload for link validation.
-              </p>
+              <h3>Receiver line</h3>
+              <p>Includes legacy serial-first nodes and direct control receiver variants that map joystick packets into dual-motor PWM commands.</p>
             </article>
             <article class="card">
-              <h3>On-device UI</h3>
-              <p>
-                Uses a 128x64 SSD1306 OLED for HUD, telemetry screens, target
-                selection, settings, and device info pages.
-              </p>
+              <h3>Utilities</h3>
+              <p>Dedicated pages for changelog timeline, setup wizard, and pinout references support deployment and maintenance workflows.</p>
             </article>
           </div>
         </section>
@@ -102,144 +89,96 @@
             <p class="eyebrow">Firmware</p>
             <h2>Repository variants</h2>
           </div>
+          <div class="table-card table-scroll">
+            <table>
+              <thead><tr><th>Folder</th><th>Role</th><th>Notes</th></tr></thead>
+              <tbody>
+                <tr><td><a href="esp-now-v1.2-oled.html"><code>ESP_NOW_V1.2_OLED</code></a></td><td>Main transmitter</td><td>OLED update optimization, EMA filtering, hysteresis deadzone, portal pairing</td></tr>
+                <tr><td><a href="esp-now-v1.1-oled.html"><code>ESP_NOW_V1.1_OLED</code></a></td><td>Older transmitter</td><td>Stable UI and settings architecture with portal and telemetry callback support</td></tr>
+                <tr><td><a href="esp-now-v1.0-oled.html"><code>ESP_NOW_V1.0_OLED</code></a></td><td>Initial transmitter</td><td>Minimal packet + display baseline implementation</td></tr>
+                <tr><td><a href="esp32-receiver-direct-v2.0.html"><code>ESP32_Receiver-Direct-v2.0</code></a></td><td>Main receiver</td><td>Direct motor logic for dual channels with PWM and response packets</td></tr>
+                <tr><td><a href="esp32-receiver-direct-v1.0.html"><code>ESP32_Receiver-Direct-v1.0</code></a></td><td>Basic receiver</td><td>Serial monitoring focused variant without integrated motor stage</td></tr>
+                <tr><td><a href="arduino-bts-bridge-logic.html"><code>Arduino_BTS_bridge_Logic</code></a></td><td>Addon module</td><td>Arduino-side bridge logic for BTS7960 controlled motor systems</td></tr>
+                <tr><td><a href="receiver-v1.1.2-esp-now.html"><code>Receiver_v1.1.2_esp_now</code></a></td><td>Legacy receiver</td><td>Telemetry validation generation and structured reply path</td></tr>
+                <tr><td><a href="receiver-v1.1-esp-now.html"><code>Receiver_v1.1_esp_now</code></a></td><td>Legacy receiver</td><td>First simple one-way receiver callback implementation</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
 
-          <div class="table-card">
+        <section class="section" id="comparison">
+          <div class="section-heading">
+            <p class="eyebrow">Comparison</p>
+            <h2>Feature matrix by folder</h2>
+          </div>
+          <div class="table-card table-scroll">
             <table>
               <thead>
                 <tr>
-                  <th>Folder</th>
-                  <th>Role</th>
-                  <th>Notes</th>
+                  <th>Feature</th>
+                  <th>V1.2 OLED</th>
+                  <th>V1.1 OLED</th>
+                  <th>V1.0 OLED</th>
+                  <th>Direct RX v2.0</th>
+                  <th>Direct RX v1.0</th>
+                  <th>RX 1.1.2</th>
+                  <th>RX 1.1</th>
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td><code>ESP_NOW_V1.2_OLED</code></td>
-                  <td>Main transmitter</td>
-                  <td>OLED UI optimization, EMA filtering, target storage, AP portal, telemetry option</td>
-                </tr>
-                <tr>
-                  <td><code>ESP_NOW_V1.1_OLED</code></td>
-                  <td>Older transmitter</td>
-                  <td>Transmitter version with earlier UI and settings implementation</td>
-                </tr>
-                <tr>
-                  <td><code>ESP_NOW_V1.0_OLED</code></td>
-                  <td>Initial transmitter</td>
-                  <td>First iteration of the OLED transmitter firmware</td>
-                </tr>
-                <tr>
-                  <td><code>ESP32_Receiver-Direct-v2.0</code></td>
-                  <td>Main receiver</td>
-                  <td>Direct motor control logic (BTS7960 compatible), dynamic reply support</td>
-                </tr>
-                <tr>
-                  <td><code>ESP32_Receiver-Direct-v1.0</code></td>
-                  <td>Basic receiver</td>
-                  <td>Direct reception without motor control</td>
-                </tr>
-                <tr>
-                  <td><code>Arduino_BTS_bridge_Logic</code></td>
-                  <td>Addon module</td>
-                  <td>Direct Arduino logic for testing/driving BTS7960 motors over standard pins</td>
-                </tr>
-                <tr>
-                  <td><code>Receiver_v1.1.2_esp_now</code></td>
-                  <td>Legacy receiver</td>
-                  <td>Older receiver iteration with ESP-NOW telemetry support</td>
-                </tr>
-                <tr>
-                  <td><code>Receiver_v1.1_esp_now</code></td>
-                  <td>Early receiver</td>
-                  <td>Initial iteration of the receiver node</td>
-                </tr>
+                <tr><td>OLED menu UI</td><td>Yes</td><td>Yes</td><td>Basic</td><td>No</td><td>No</td><td>No</td><td>No</td></tr>
+                <tr><td>Portal target registration</td><td>Yes</td><td>Yes</td><td>No</td><td>No</td><td>No</td><td>No</td><td>No</td></tr>
+                <tr><td>EMA analog filtering</td><td>Yes</td><td>No</td><td>No</td><td>No</td><td>No</td><td>No</td><td>No</td></tr>
+                <tr><td>Hysteresis deadzone</td><td>Yes</td><td>No</td><td>No</td><td>No</td><td>No</td><td>No</td><td>No</td></tr>
+                <tr><td>Telemetry reply support</td><td>Optional</td><td>Optional</td><td>No</td><td>Yes</td><td>No</td><td>Yes</td><td>No</td></tr>
+                <tr><td>Direct motor PWM output</td><td>No</td><td>No</td><td>No</td><td>Yes</td><td>No</td><td>No</td><td>No</td></tr>
               </tbody>
             </table>
           </div>
         </section>
 
         <section id="setup" class="section">
-          <div class="section-heading">
-            <p class="eyebrow">Setup</p>
-            <h2>Build and pair the devices</h2>
-          </div>
-
+          <div class="section-heading"><p class="eyebrow">Setup</p><h2>Build and pair devices</h2></div>
           <div class="cards two-up">
             <article class="card">
-              <h3>1. Flash the receiver</h3>
-              <p>Open <code>ESP32_Receiver-Direct-v2.0</code> in PlatformIO and upload it.</p>
-              <pre><code>cd ESP32_Receiver-Direct-v2.0
+              <h3>1. Flash receiver</h3>
+              <p>Upload the receiver first and keep serial monitor open to capture MAC address.</p>
+              <pre><code class="language-bash">cd ESP32_Receiver-Direct-v2.0
 pio run
 pio run --target upload
 pio device monitor</code></pre>
-              <p>Record the MAC address printed in the serial monitor.</p>
             </article>
-
             <article class="card">
-              <h3>2. Flash the transmitter</h3>
-              <p>Open <code>ESP_NOW_V1.2_OLED</code> and upload the main handheld firmware.</p>
-              <pre><code>cd ESP_NOW_V1.2_OLED
+              <h3>2. Flash transmitter</h3>
+              <p>Upload the transmitter, open settings, and register receiver from captive portal.</p>
+              <pre><code class="language-bash">cd ESP_NOW_V1.2_OLED
 pio run
 pio run --target upload</code></pre>
-              <p>
-                In settings, choose <code>Add Tgt(AP)</code>, connect to
-                <code>ESP-NOW-REMOTE</code>, then visit <code>192.168.4.1</code>.
-              </p>
             </article>
           </div>
-
           <div class="timeline">
             <div class="timeline-item">SSID: <code>ESP-NOW-REMOTE</code></div>
             <div class="timeline-item">Password: <code>12345678</code></div>
             <div class="timeline-item">Portal URL: <code>http://192.168.4.1</code></div>
-            <div class="timeline-item">Max saved targets: <code>5</code></div>
+            <div class="timeline-item">Saved targets: <code>5</code></div>
           </div>
         </section>
 
         <section class="section">
-          <div class="section-heading">
-            <p class="eyebrow">Pins</p>
-            <h2>Main transmitter mapping</h2>
-          </div>
-
-          <div class="table-card">
-            <table>
-              <thead>
-                <tr>
-                  <th>Function</th>
-                  <th>Pin</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr><td>Joystick Y</td><td>33</td></tr>
-                <tr><td>Potentiometer</td><td>32</td></tr>
-                <tr><td>Joystick X</td><td>35</td></tr>
-                <tr><td>Encoder CLK</td><td>27</td></tr>
-                <tr><td>Encoder DT</td><td>14</td></tr>
-                <tr><td>Encoder switch</td><td>13</td></tr>
-                <tr><td>Toggle 1</td><td>26</td></tr>
-                <tr><td>Toggle 2</td><td>25</td></tr>
-                <tr><td>Push 1</td><td>19</td></tr>
-                <tr><td>Push 2</td><td>15</td></tr>
-                <tr><td>OLED SDA</td><td>21</td></tr>
-                <tr><td>OLED SCL</td><td>22</td></tr>
-                <tr><td>Yellow LED</td><td>23</td></tr>
-                <tr><td>Green LED</td><td>18</td></tr>
-              </tbody>
-            </table>
+          <div class="section-heading"><p class="eyebrow">Utilities</p><h2>Additional documentation pages</h2></div>
+          <div class="cards three-up">
+            <article class="card"><h3>Changelog timeline</h3><p>Review version milestones and major changes.</p><a class="button secondary" href="changelog.html">Open Changelog</a></article>
+            <article class="card"><h3>Setup wizard</h3><p>Follow a guided, step-by-step bring-up checklist.</p><a class="button secondary" href="setup-wizard.html">Open Wizard</a></article>
+            <article class="card"><h3>Pinout reference</h3><p>Open a consolidated wiring sheet for transmitter and receiver families.</p><a class="button secondary" href="pinout.html">Open Pinout</a></article>
           </div>
         </section>
 
         <section id="packets" class="section">
-          <div class="section-heading">
-            <p class="eyebrow">Packets</p>
-            <h2>Data structures on the link</h2>
-          </div>
-
+          <div class="section-heading"><p class="eyebrow">Packets</p><h2>Link data structures</h2></div>
           <div class="cards two-up">
             <article class="card">
               <h3>Control payload</h3>
-              <pre><code>struct_message {
+              <pre><code class="language-cpp">typedef struct struct_message {
   uint16_t joyX;
   uint16_t joyY;
   uint16_t potValue;
@@ -247,22 +186,43 @@ pio run --target upload</code></pre>
   bool toggle2;
   bool push1;
   bool push2;
-}</code></pre>
+} struct_message;</code></pre>
             </article>
-
             <article class="card">
               <h3>Reply payload</h3>
-              <pre><code>struct_reply {
+              <pre><code class="language-cpp">typedef struct struct_reply {
   uint8_t sensorValue;
   uint8_t counter;
   uint8_t flags;
-}</code></pre>
+} struct_reply;</code></pre>
             </article>
           </div>
         </section>
-
-       
       </main>
+
+      <footer class="footer">
+        <div class="footer-grid">
+          <div>
+            <h3>Project</h3>
+            <p>DIY remote firmware collection for ESP32 controllers and receiver variants.</p>
+          </div>
+          <div>
+            <h3>Quick links</h3>
+            <p><a href="index.html#firmware">Firmware matrix</a></p>
+            <p><a href="setup-wizard.html">Setup wizard</a></p>
+            <p><a href="changelog.html">Changelog</a></p>
+          </div>
+          <div>
+            <h3>Repository</h3>
+            <p><a href="https://github.com/SshgurkiratSingh/DIY_REMOTE_COLLECTIONS" target="_blank" rel="noreferrer">GitHub source</a></p>
+            <p><a href="https://github.com/SshgurkiratSingh/DIY_REMOTE_COLLECTIONS/issues" target="_blank" rel="noreferrer">Issues</a></p>
+            <p>Updated: 2026-03-31</p>
+          </div>
+        </div>
+      </footer>
     </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="./app.js"></script>
   </body>
 </html>

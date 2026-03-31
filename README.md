@@ -93,22 +93,22 @@ Current behavior:
 
 The main transmitter pin configuration in `ESP_NOW_V1.2_OLED/include/Config.h` is:
 
-| Function                     | Pin |
-| ---------------------------- | --: |
+| Function                   | Pin |
+| -------------------------- | --: |
 | Joystick Y (`PIN_JOY_VRY`) |  33 |
 | Potentiometer (`PIN_POT`)  |  32 |
 | Joystick X (`PIN_JOY_VRX`) |  35 |
-| Encoder CLK                  |  27 |
-| Encoder DT                   |  14 |
-| Encoder Switch               |  13 |
-| Toggle 1                     |  26 |
-| Toggle 2                     |  25 |
-| Push 1                       |  19 |
-| Push 2                       |  15 |
-| OLED SDA                     |  21 |
-| OLED SCL                     |  22 |
-| Yellow LED                   |  23 |
-| Green LED                    |  18 |
+| Encoder CLK                |  27 |
+| Encoder DT                 |  14 |
+| Encoder Switch             |  13 |
+| Toggle 1                   |  26 |
+| Toggle 2                   |  25 |
+| Push 1                     |  19 |
+| Push 2                     |  15 |
+| OLED SDA                   |  21 |
+| OLED SCL                   |  22 |
+| Yellow LED                 |  23 |
+| Green LED                  |  18 |
 
 ## Packet Format
 

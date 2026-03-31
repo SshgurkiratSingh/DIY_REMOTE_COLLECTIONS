@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Receiver_v1.1.2_esp_now</title>
+  <meta name="description" content="Legacy receiver variant that validates two-way reply behavior and telemetry packet flow." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="page-shell">
+    <nav class="topbar">
+      <div class="brand">ESP-NOW Remote</div>
+      <div class="nav-links">
+          <a href="index.html#overview">Overview</a>
+          <a href="index.html#firmware">Firmware</a>
+          <a href="index.html#setup">Setup</a>
+          <a href="index.html#packets">Packets</a>
+          <a href="changelog.html">Changelog</a>
+          <a href="setup-wizard.html">Wizard</a>
+          <a href="pinout.html">Pinout</a>
+</div>
+      <button id="theme-toggle" class="theme-btn" type="button" aria-label="Toggle theme">Light</button>
+    </nav>
+
+    <main>
+      <section class="section">
+        <div class="breadcrumbs"><a href="index.html">Home</a> / <a href="index.html#firmware">Firmware</a> / <span>Receiver_v1.1.2_esp_now</span></div>
+        <div class="meta-bar">
+          <span class="meta-badge">Folder: Receiver_v1.1.2_esp_now</span>
+          <span class="meta-badge">Category: Legacy receiver telemetry</span>
+          <span class="meta-badge">Updated: 2026-03-31</span>
+        </div>
+      </section>
+
+      <section class="section doc-layout">
+        <article class="content-box" data-doc-content>
+          <h1>Receiver_v1.1.2_esp_now</h1>
+          <p class="lede">Legacy receiver variant that validates two-way reply behavior and telemetry packet flow.</p>
+          
+          <h3>Telemetry bridge role</h3>
+          <p>This revision bridges one-way listeners and direct hardware receivers by returning structured reply payloads.</p>
+          <h4>Reply packet model</h4>
+          <pre><code class="language-cpp">struct_reply {
+  uint8_t sensorValue;
+  uint8_t counter;
+  uint8_t flags;
+};</code></pre>
+          <h4>When to use</h4>
+          <p>Use for validating RX callbacks on transmitter before moving to full motor-control receiver deployment.</p>
+        
+          <h3>Build / Flash</h3>
+          <pre><code class="language-bash">cd Receiver_v1.1.2_esp_now
+pio run
+pio run --target upload</code></pre>
+        </article>
+
+        <aside class="toc-box">
+          <h3>On this page</h3>
+          <ul id="toc-list" class="toc-list"></ul>
+          <h3 style="margin-top: 1.6rem;">Related pages</h3>
+          <ul class="related-list">
+            <li><a href="receiver-v1.1-esp-now.html">Receiver_v1.1_esp_now</a></li>
+            <li><a href="esp-now-v1.1-oled.html">ESP_NOW_V1.1_OLED</a></li>
+            <li><a href="changelog.html">Changelog</a></li>
+          </ul>
+        </aside>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-grid">
+        <div><h3>Navigation</h3><p><a href="index.html">Overview</a></p><p><a href="index.html#comparison">Comparison matrix</a></p></div>
+        <div><h3>Utilities</h3><p><a href="setup-wizard.html">Setup wizard</a></p><p><a href="pinout.html">Pinout</a></p></div>
+        <div><h3>Release</h3><p><a href="changelog.html">Changelog</a></p><p>Updated: 2026-03-31</p></div>
+      </div>
+    </footer>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>

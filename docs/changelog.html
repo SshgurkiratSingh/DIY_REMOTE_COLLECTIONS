@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Changelog</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="page-shell">
+    <nav class="topbar">
+      <div class="brand">ESP-NOW Remote</div>
+      <div class="nav-links">
+          <a href="index.html#overview">Overview</a>
+          <a href="index.html#firmware">Firmware</a>
+          <a href="index.html#setup">Setup</a>
+          <a href="index.html#packets">Packets</a>
+          <a href="changelog.html">Changelog</a>
+          <a href="setup-wizard.html">Wizard</a>
+          <a href="pinout.html">Pinout</a>
+</div>
+      <button id="theme-toggle" class="theme-btn" type="button">Light</button>
+    </nav>
+    <main>
+      <section class="section">
+        <div class="breadcrumbs"><a href="index.html">Home</a> / <span>Changelog</span></div>
+        <article class="content-box" data-doc-content>
+          <h1>Release timeline</h1>
+          <p class="lede">Key milestones across transmitter and receiver generations.</p>
+          <h3>v1.2.0 - 2026-03-31</h3>
+          <h4>Transmitter quality update</h4>
+          <ul>
+            <li>OLED redraw optimization via change detection hashing.</li>
+            <li>EMA filtering on analog inputs for smoother values.</li>
+            <li>Hysteresis deadzone handling for stable center behavior.</li>
+          </ul>
+          <h3>Direct receiver line added</h3>
+          <h4>v2.0 motor receiver</h4>
+          <ul>
+            <li>Dual motor differential control using ESP32 PWM channels.</li>
+            <li>Dynamic peer add and response packet transmission.</li>
+          </ul>
+          <h3>Legacy milestones</h3>
+          <h4>Receiver v1.1.2 and v1.1</h4>
+          <p>These variants remain available as protocol references and fallback baselines.</p>
+        </article>
+      </section>
+    </main>
+    <footer class="footer"><div class="footer-grid"><div><h3>Back to docs</h3><p><a href="index.html">Main page</a></p></div><div><h3>Related</h3><p><a href="setup-wizard.html">Setup wizard</a></p></div><div><h3>Updated</h3><p>2026-03-31</p></div></div></footer>
+  </div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>

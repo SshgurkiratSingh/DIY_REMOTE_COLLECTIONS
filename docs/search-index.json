@@ -1,0 +1,127 @@
+[
+    {
+        "title": "ESP_NOW_V1.2_OLED",
+        "url": "esp-now-v1.2-oled.html",
+        "summary": "Main transmitter with OLED optimization, EMA filtering, and hysteresis deadzone logic.",
+        "keywords": [
+            "esp-now",
+            "transmitter",
+            "oled",
+            "ema",
+            "hysteresis",
+            "v1.2"
+        ]
+    },
+    {
+        "title": "ESP_NOW_V1.1_OLED",
+        "url": "esp-now-v1.1-oled.html",
+        "summary": "Stable transmitter generation with portal pairing and persistent settings.",
+        "keywords": [
+            "esp-now",
+            "transmitter",
+            "portal",
+            "settings",
+            "v1.1"
+        ]
+    },
+    {
+        "title": "ESP_NOW_V1.0_OLED",
+        "url": "esp-now-v1.0-oled.html",
+        "summary": "Baseline transmitter proof-of-concept and packet structure origin.",
+        "keywords": [
+            "esp-now",
+            "transmitter",
+            "baseline",
+            "v1.0"
+        ]
+    },
+    {
+        "title": "ESP32_Receiver-Direct-v2.0",
+        "url": "esp32-receiver-direct-v2.0.html",
+        "summary": "Main receiver with direct dual motor PWM control and reply packets.",
+        "keywords": [
+            "receiver",
+            "motor",
+            "bts7960",
+            "l298n",
+            "esp32",
+            "v2.0"
+        ]
+    },
+    {
+        "title": "ESP32_Receiver-Direct-v1.0",
+        "url": "esp32-receiver-direct-v1.0.html",
+        "summary": "Basic direct receiver used for serial payload monitoring.",
+        "keywords": [
+            "receiver",
+            "serial",
+            "esp32",
+            "v1.0"
+        ]
+    },
+    {
+        "title": "Arduino_BTS_bridge_Logic",
+        "url": "arduino-bts-bridge-logic.html",
+        "summary": "Standalone BTS7960 bridge control logic for Arduino targets.",
+        "keywords": [
+            "arduino",
+            "bts7960",
+            "bridge",
+            "motor"
+        ]
+    },
+    {
+        "title": "Receiver_v1.1.2_esp_now",
+        "url": "receiver-v1.1.2-esp-now.html",
+        "summary": "Legacy receiver with telemetry response validation path.",
+        "keywords": [
+            "receiver",
+            "telemetry",
+            "legacy",
+            "v1.1.2"
+        ]
+    },
+    {
+        "title": "Receiver_v1.1_esp_now",
+        "url": "receiver-v1.1-esp-now.html",
+        "summary": "Earliest receiver implementation with one-way packet checks.",
+        "keywords": [
+            "receiver",
+            "legacy",
+            "one-way",
+            "v1.1"
+        ]
+    },
+    {
+        "title": "Changelog",
+        "url": "changelog.html",
+        "summary": "Version timeline and release highlights.",
+        "keywords": [
+            "changelog",
+            "versions",
+            "release"
+        ]
+    },
+    {
+        "title": "Setup Wizard",
+        "url": "setup-wizard.html",
+        "summary": "Guided bring-up flow for transmitter and receiver pairing.",
+        "keywords": [
+            "setup",
+            "wizard",
+            "pairing",
+            "steps"
+        ]
+    },
+    {
+        "title": "Pinout Reference",
+        "url": "pinout.html",
+        "summary": "Pin mapping references for transmitter and direct receiver variants.",
+        "keywords": [
+            "pinout",
+            "gpio",
+            "wiring",
+            "mapping"
+        ]
+    }
+]
