@@ -47,11 +47,11 @@
           <div class="hero-card">
             <div class="stat">
               <span class="stat-label">Main transmitter</span>
-              <strong>ESP_NOW_V1.1_OLED</strong>
+              <strong>ESP_NOW_V1.2_OLED</strong>
             </div>
             <div class="stat">
               <span class="stat-label">Main receiver</span>
-              <strong>Receiver_v1.1.2_esp_now</strong>
+              <strong>ESP32_Receiver-Direct-v2.0</strong>
             </div>
             <div class="stat">
               <span class="stat-label">Transport</span>
@@ -83,8 +83,8 @@
             <article class="card">
               <h3>Receiver</h3>
               <p>
-                Accepts incoming control data, prints it over serial, and returns a
-                small reply payload for link validation and telemetry experiments.
+                Accepts incoming control data, handles dual motor control directly via mapped pins (e.g. for BTS7960 drivers), prints it over serial, and returns a
+                small reply payload for link validation.
               </p>
             </article>
             <article class="card">
@@ -114,24 +114,44 @@
               </thead>
               <tbody>
                 <tr>
-                  <td><code>ESP_NOW_V1.1_OLED</code></td>
+                  <td><code>ESP_NOW_V1.2_OLED</code></td>
                   <td>Main transmitter</td>
-                  <td>OLED UI, target storage, AP portal, telemetry option</td>
+                  <td>OLED UI optimization, EMA filtering, target storage, AP portal, telemetry option</td>
+                </tr>
+                <tr>
+                  <td><code>ESP_NOW_V1.1_OLED</code></td>
+                  <td>Older transmitter</td>
+                  <td>Transmitter version with earlier UI and settings implementation</td>
                 </tr>
                 <tr>
                   <td><code>ESP_NOW_V1.0_OLED</code></td>
-                  <td>Earlier transmitter</td>
-                  <td>Previous UI and settings implementation snapshot</td>
+                  <td>Initial transmitter</td>
+                  <td>First iteration of the OLED transmitter firmware</td>
+                </tr>
+                <tr>
+                  <td><code>ESP32_Receiver-Direct-v2.0</code></td>
+                  <td>Main receiver</td>
+                  <td>Direct motor control logic (BTS7960 compatible), dynamic reply support</td>
+                </tr>
+                <tr>
+                  <td><code>ESP32_Receiver-Direct-v1.0</code></td>
+                  <td>Basic receiver</td>
+                  <td>Direct reception without motor control</td>
+                </tr>
+                <tr>
+                  <td><code>Arduino_BTS_bridge_Logic</code></td>
+                  <td>Addon module</td>
+                  <td>Direct Arduino logic for testing/driving BTS7960 motors over standard pins</td>
                 </tr>
                 <tr>
                   <td><code>Receiver_v1.1.2_esp_now</code></td>
-                  <td>Main receiver</td>
-                  <td>Serial logging plus dynamic reply support</td>
+                  <td>Legacy receiver</td>
+                  <td>Older receiver iteration with ESP-NOW telemetry support</td>
                 </tr>
                 <tr>
                   <td><code>Receiver_v1.1_esp_now</code></td>
-                  <td>Earlier receiver</td>
-                  <td>Legacy receiver revision kept for comparison</td>
+                  <td>Early receiver</td>
+                  <td>Initial iteration of the receiver node</td>
                 </tr>
               </tbody>
             </table>
@@ -147,8 +167,8 @@
           <div class="cards two-up">
             <article class="card">
               <h3>1. Flash the receiver</h3>
-              <p>Open <code>Receiver_v1.1.2_esp_now</code> in PlatformIO and upload it.</p>
-              <pre><code>cd Receiver_v1.1.2_esp_now
+              <p>Open <code>ESP32_Receiver-Direct-v2.0</code> in PlatformIO and upload it.</p>
+              <pre><code>cd ESP32_Receiver-Direct-v2.0
 pio run
 pio run --target upload
 pio device monitor</code></pre>
@@ -157,8 +177,8 @@ pio device monitor</code></pre>
 
             <article class="card">
               <h3>2. Flash the transmitter</h3>
-              <p>Open <code>ESP_NOW_V1.1_OLED</code> and upload the main handheld firmware.</p>
-              <pre><code>cd ESP_NOW_V1.1_OLED
+              <p>Open <code>ESP_NOW_V1.2_OLED</code> and upload the main handheld firmware.</p>
+              <pre><code>cd ESP_NOW_V1.2_OLED
 pio run
 pio run --target upload</code></pre>
               <p>
