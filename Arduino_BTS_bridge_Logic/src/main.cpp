@@ -21,6 +21,7 @@ void setup()
 
   Serial.begin(9600);
   Serial.println("--- MOTOR DRIVER SYSTEM CHECK COMMENCING ---");
+  Serial.println("Firmware Version: v1.0.0");
   delay(2000);
 }
 

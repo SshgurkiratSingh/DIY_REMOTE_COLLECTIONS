@@ -40,6 +40,9 @@ void loadActiveTarget(int index)
 void setup()
 {
   Serial.begin(115200);
+  Serial.println("ESP-NOW Controller Starting...");
+  Serial.print("Firmware Version: ");
+  Serial.println(FIRMWARE_VERSION);
 
   storageManager.begin();
   storageManager.loadConfig(sysConfig);

@@ -52,6 +52,8 @@ struct TargetNode
 };
 
 // --- System Configuration & NVS ---
+#define FIRMWARE_VERSION "v1.0.0"
+
 struct SystemConfig
 {
     uint16_t deadzone;

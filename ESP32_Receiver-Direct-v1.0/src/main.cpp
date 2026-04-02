@@ -79,6 +79,7 @@ void setup()
   initMotor(RIGHT_MOTOR);
 
   Serial.println("ESP32 TWO-MOTOR CONTROLLER READY");
+  Serial.println("Firmware Version: v1.0.0");
 }
 
 void loop()
