@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ESP32_Receiver-Direct-MPU6050-v3.0</title>
+  <meta name="description" content="Direct ESP32 receiver with MPU6050 estimator, drive modes, and motor control outputs." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="page-shell">
+    <nav class="topbar">
+      <div class="brand">ESP-NOW Remote</div>
+      <div class="nav-links">
+        <a href="index.html#overview">Overview</a>
+        <a href="index.html#firmware">Firmware</a>
+        <a href="index.html#setup">Setup</a>
+        <a href="index.html#packets">Packets</a>
+        <a href="changelog.html">Changelog</a>
+        <a href="setup-wizard.html">Wizard</a>
+        <a href="pinout.html">Pinout</a>
+      </div>
+      <button id="theme-toggle" class="theme-btn" type="button" aria-label="Toggle theme">Light</button>
+    </nav>
+
+    <main>
+      <section class="section">
+        <div class="breadcrumbs"><a href="index.html">Home</a> / <a href="index.html#firmware">Firmware</a> / <span>ESP32_Receiver-Direct-MPU6050-v3.0</span></div>
+        <div class="meta-bar">
+          <span class="meta-badge">Folder: ESP32_Receiver-Direct-MPU6050-v3.0</span>
+          <span class="meta-badge">Category: Direct receiver with IMU</span>
+          <span class="meta-badge">Updated: 2026-04-03</span>
+        </div>
+      </section>
+
+      <section class="section doc-layout">
+        <article class="content-box" data-doc-content>
+          <h1>ESP32_Receiver-Direct-MPU6050-v3.0</h1>
+          <p class="lede">Direct drive receiver that combines ESP-NOW command input, dual motor PWM control, and MPU6050-based orientation estimation.</p>
+
+          <h3>System architecture</h3>
+          <p>This project is organized into modular components: <code>MotorController</code> for output drive, <code>MpuEstimator</code> for IMU fusion updates, and <code>DriveModes</code> for behavior-level control decisions from joystick commands.</p>
+
+          <h4>Command intake and safety timeout</h4>
+          <p>The receiver stores the latest ESP-NOW payload in a critical section and applies a timeout guard. If no fresh packet arrives within the configured window, the loop switches to a neutral command to prevent runaway motion.</p>
+          <pre><code class="language-cpp">const uint32_t COMMAND_TIMEOUT_MS = 500;
+if (!freshSnapshot || (now - lastCommandSnapshotMs > COMMAND_TIMEOUT_MS)) {
+  commandSnapshot = neutralCommand();
+}</code></pre>
+
+          <h4>Motor output mapping</h4>
+          <p>Left and right channels are mapped to independent RPWM/LPWM and enable pins. The control layer writes target speeds and updates output each loop with ramp support.</p>
+          <pre><code class="language-cpp">LEFT:  RPWM=18 LPWM=19 LEN=21 REN=22
+RIGHT: RPWM=25 LPWM=26 LEN=27 REN=14</code></pre>
+
+          <h4>IMU integration</h4>
+          <p>MPU6050 is configured over I2C using custom SDA/SCL pins and updated with loop delta-time. The resulting yaw/pitch/roll state is provided to drive logic for mode-aware control.</p>
+          <pre><code class="language-cpp">const int I2C_SDA_PIN = 32;
+const int I2C_SCL_PIN = 33;
+imuEstimator.update(dt, imuState);</code></pre>
+
+          <h4>Use case</h4>
+          <p>Use this variant for motion-aware receivers where orientation should influence direction control and stabilization behavior, while still accepting the standard remote payload format.</p>
+
+          <h3>Build / Flash</h3>
+          <pre><code class="language-bash">cd ESP32_Receiver-Direct-MPU6050-v3.0
+pio run
+pio run --target upload</code></pre>
+        </article>
+
+        <aside class="toc-box">
+          <h3>On this page</h3>
+          <ul id="toc-list" class="toc-list"></ul>
+          <h3 style="margin-top: 1.6rem;">Related pages</h3>
+          <ul class="related-list">
+            <li><a href="esp32-receiver-direct-v2.0.html">ESP32_Receiver-Direct-v2.0</a></li>
+            <li><a href="pinout.html">Pinout Reference</a></li>
+            <li><a href="setup-wizard.html">Setup Wizard</a></li>
+          </ul>
+        </aside>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-grid">
+        <div><h3>Navigation</h3><p><a href="index.html">Overview</a></p><p><a href="index.html#comparison">Comparison matrix</a></p></div>
+        <div><h3>Utilities</h3><p><a href="setup-wizard.html">Setup wizard</a></p><p><a href="pinout.html">Pinout</a></p></div>
+        <div><h3>Release</h3><p><a href="changelog.html">Changelog</a></p><p>Updated: 2026-04-03</p></div>
+      </div>
+    </footer>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>

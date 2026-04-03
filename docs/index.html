@@ -97,8 +97,11 @@
                 <tr><td><a href="esp-now-v1.1-oled.html"><code>ESP_NOW_V1.1_OLED</code></a></td><td>Older transmitter</td><td>Stable UI and settings architecture with portal and telemetry callback support</td></tr>
                 <tr><td><a href="esp-now-v1.0-oled.html"><code>ESP_NOW_V1.0_OLED</code></a></td><td>Initial transmitter</td><td>Minimal packet + display baseline implementation</td></tr>
                 <tr><td><a href="esp32-receiver-direct-v2.0.html"><code>ESP32_Receiver-Direct-v2.0</code></a></td><td>Main receiver</td><td>Direct motor logic for dual channels with PWM and response packets</td></tr>
+                <tr><td><a href="esp32-receiver-direct-mpu6050-v3.0.html"><code>ESP32_Receiver-Direct-MPU6050-v3.0</code></a></td><td>Direct receiver + IMU</td><td>ESP-NOW direct drive with MPU6050 estimator and mode-aware control</td></tr>
                 <tr><td><a href="esp32-receiver-direct-v1.0.html"><code>ESP32_Receiver-Direct-v1.0</code></a></td><td>Basic receiver</td><td>Serial monitoring focused variant without integrated motor stage</td></tr>
                 <tr><td><a href="arduino-bts-bridge-logic.html"><code>Arduino_BTS_bridge_Logic</code></a></td><td>Addon module</td><td>Arduino-side bridge logic for BTS7960 controlled motor systems</td></tr>
+                <tr><td><a href="fsi6-receiver-bts-bridge-mpu6050-v1.html"><code>FSi6_Receiver-BTS_Bridge-MPU6050-V1</code></a></td><td>FS-i6 bridge + IMU</td><td>RC receiver stack with BTS bridge and MPU6050 sensor-assisted control</td></tr>
+                <tr><td><a href="fsi6-receiver-bts-bridge-v1.html"><code>FSi6_Receiver-BTS_Bridge-V1</code></a></td><td>FS-i6 bridge baseline</td><td>RC receiver to BTS bridge motor drive without IMU layer</td></tr>
                 <tr><td><a href="receiver-v1.1.2-esp-now.html"><code>Receiver_v1.1.2_esp_now</code></a></td><td>Legacy receiver</td><td>Telemetry validation generation and structured reply path</td></tr>
                 <tr><td><a href="receiver-v1.1-esp-now.html"><code>Receiver_v1.1_esp_now</code></a></td><td>Legacy receiver</td><td>First simple one-way receiver callback implementation</td></tr>
               </tbody>
@@ -120,18 +123,23 @@
                   <th>V1.1 OLED</th>
                   <th>V1.0 OLED</th>
                   <th>Direct RX v2.0</th>
+                  <th>Direct RX MPU v3.0</th>
                   <th>Direct RX v1.0</th>
+                  <th>FS-i6 BTS + MPU</th>
+                  <th>FS-i6 BTS v1</th>
                   <th>RX 1.1.2</th>
                   <th>RX 1.1</th>
                 </tr>
               </thead>
               <tbody>
-                <tr><td>OLED menu UI</td><td>Yes</td><td>Yes</td><td>Basic</td><td>No</td><td>No</td><td>No</td><td>No</td></tr>
-                <tr><td>Portal target registration</td><td>Yes</td><td>Yes</td><td>No</td><td>No</td><td>No</td><td>No</td><td>No</td></tr>
-                <tr><td>EMA analog filtering</td><td>Yes</td><td>No</td><td>No</td><td>No</td><td>No</td><td>No</td><td>No</td></tr>
-                <tr><td>Hysteresis deadzone</td><td>Yes</td><td>No</td><td>No</td><td>No</td><td>No</td><td>No</td><td>No</td></tr>
-                <tr><td>Telemetry reply support</td><td>Optional</td><td>Optional</td><td>No</td><td>Yes</td><td>No</td><td>Yes</td><td>No</td></tr>
-                <tr><td>Direct motor PWM output</td><td>No</td><td>No</td><td>No</td><td>Yes</td><td>No</td><td>No</td><td>No</td></tr>
+                <tr><td>OLED menu UI</td><td>Yes</td><td>Yes</td><td>Basic</td><td>No</td><td>No</td><td>No</td><td>No</td><td>No</td><td>No</td></tr>
+                <tr><td>Portal target registration</td><td>Yes</td><td>Yes</td><td>No</td><td>No</td><td>No</td><td>No</td><td>No</td><td>No</td><td>No</td></tr>
+                <tr><td>EMA analog filtering</td><td>Yes</td><td>No</td><td>No</td><td>No</td><td>No</td><td>No</td><td>No</td><td>No</td><td>No</td></tr>
+                <tr><td>Hysteresis deadzone</td><td>Yes</td><td>No</td><td>No</td><td>No</td><td>No</td><td>No</td><td>No</td><td>No</td><td>No</td></tr>
+                <tr><td>Telemetry reply support</td><td>Optional</td><td>Optional</td><td>No</td><td>Yes</td><td>No</td><td>No</td><td>No</td><td>No</td><td>Yes</td><td>No</td></tr>
+                <tr><td>Direct motor PWM output</td><td>No</td><td>No</td><td>No</td><td>Yes</td><td>Yes</td><td>No</td><td>Yes</td><td>Yes</td><td>No</td><td>No</td></tr>
+                <tr><td>IMU integration</td><td>No</td><td>No</td><td>No</td><td>No</td><td>Yes (MPU6050)</td><td>No</td><td>Yes (MPU6050)</td><td>No</td><td>No</td><td>No</td></tr>
+                <tr><td>FS-i6 receiver input</td><td>No</td><td>No</td><td>No</td><td>No</td><td>No</td><td>No</td><td>Yes</td><td>Yes</td><td>No</td><td>No</td></tr>
               </tbody>
             </table>
           </div>

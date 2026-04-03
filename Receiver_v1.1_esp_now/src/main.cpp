@@ -96,7 +96,6 @@ void setup() {
   WiFi.disconnect();
 
   Serial.println("ESP-NOW Receiver Starting...");
-  Serial.println("Firmware Version: v1.1.0");
   Serial.print("Receiver MAC: ");
   Serial.println(WiFi.macAddress());
 

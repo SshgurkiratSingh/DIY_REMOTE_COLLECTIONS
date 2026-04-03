@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FSi6_Receiver-BTS_Bridge-MPU6050-V1</title>
+  <meta name="description" content="FS-i6 receiver stack with BTS bridge motor control and MPU6050 support." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css" />
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div class="page-shell">
+    <nav class="topbar">
+      <div class="brand">ESP-NOW Remote</div>
+      <div class="nav-links">
+        <a href="index.html#overview">Overview</a>
+        <a href="index.html#firmware">Firmware</a>
+        <a href="index.html#setup">Setup</a>
+        <a href="index.html#packets">Packets</a>
+        <a href="changelog.html">Changelog</a>
+        <a href="setup-wizard.html">Wizard</a>
+        <a href="pinout.html">Pinout</a>
+      </div>
+      <button id="theme-toggle" class="theme-btn" type="button" aria-label="Toggle theme">Light</button>
+    </nav>
+
+    <main>
+      <section class="section">
+        <div class="breadcrumbs"><a href="index.html">Home</a> / <a href="index.html#firmware">Firmware</a> / <span>FSi6_Receiver-BTS_Bridge-MPU6050-V1</span></div>
+        <div class="meta-bar">
+          <span class="meta-badge">Folder: FSi6_Receiver-BTS_Bridge-MPU6050-V1</span>
+          <span class="meta-badge">Category: FS-i6 bridge with IMU</span>
+          <span class="meta-badge">Updated: 2026-04-03</span>
+        </div>
+      </section>
+
+      <section class="section doc-layout">
+        <article class="content-box" data-doc-content>
+          <h1>FSi6_Receiver-BTS_Bridge-MPU6050-V1</h1>
+          <p class="lede">PWM/PPM radio receiver stack for FS-i6 class transmitters with dual BTS7960 motor bridge control and integrated IMU handling.</p>
+
+          <h3>Component layout</h3>
+          <p>Main loop updates three modules in sequence: radio receiver data, IMU state, and drive logic. This provides deterministic control updates at the configured loop delay.</p>
+
+          <h4>Motor bridge configuration</h4>
+          <p>Both left and right motors use dedicated RPWM/LPWM plus enable lines. The motor controller is initialized once and consumed by drive logic each loop.</p>
+          <pre><code class="language-cpp">Left:  RPWM=5  LPWM=6  LEN=7  REN=8
+Right: RPWM=9  LPWM=10 LEN=11 REN=12</code></pre>
+
+          <h4>Receiver and mode execution</h4>
+          <p>The receiver module captures channel values and mode state, then <code>DriveLogic</code> maps them to motor outputs. With IMU active, additional behavior can be attached to yaw-aware or stabilized movement modes.</p>
+          <pre><code class="language-cpp">rcReceiver.update();
+imuHandler.update();
+ReceiverData rcData = rcReceiver.getData();
+driveLogic->update(rcData);</code></pre>
+
+          <h4>Where this fits</h4>
+          <p>This folder is useful when operating from an RC transmitter path (FS-i6 family) instead of ESP-NOW input, while still keeping BTS7960 + sensor-assisted control architecture.</p>
+
+          <h3>Build / Flash</h3>
+          <pre><code class="language-bash">cd FSi6_Receiver-BTS_Bridge-MPU6050-V1
+pio run
+pio run --target upload</code></pre>
+        </article>
+
+        <aside class="toc-box">
+          <h3>On this page</h3>
+          <ul id="toc-list" class="toc-list"></ul>
+          <h3 style="margin-top: 1.6rem;">Related pages</h3>
+          <ul class="related-list">
+            <li><a href="fsi6-receiver-bts-bridge-v1.html">FSi6_Receiver-BTS_Bridge-V1</a></li>
+            <li><a href="esp32-receiver-direct-mpu6050-v3.0.html">ESP32_Receiver-Direct-MPU6050-v3.0</a></li>
+            <li><a href="pinout.html">Pinout Reference</a></li>
+          </ul>
+        </aside>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-grid">
+        <div><h3>Navigation</h3><p><a href="index.html">Overview</a></p><p><a href="index.html#comparison">Comparison matrix</a></p></div>
+        <div><h3>Utilities</h3><p><a href="setup-wizard.html">Setup wizard</a></p><p><a href="pinout.html">Pinout</a></p></div>
+        <div><h3>Release</h3><p><a href="changelog.html">Changelog</a></p><p>Updated: 2026-04-03</p></div>
+      </div>
+    </footer>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>

@@ -8,7 +8,10 @@ The repository currently contains multiple firmware snapshots traversing differe
 - `ESP_NOW_V1.1_OLED`: older OLED transmitter iteration
 - `ESP_NOW_V1.0_OLED`: initial OLED transmitter iteration
 - `ESP32_Receiver-Direct-v2.0`: main receiver featuring direct dual motor control (BTS7960/L298N) and structural reply
+- `ESP32_Receiver-Direct-MPU6050-v3.0`: direct ESP-NOW receiver with MPU6050 estimator and mode-aware drive control
 - `ESP32_Receiver-Direct-v1.0`: basic receiver without motor control
+- `FSi6_Receiver-BTS_Bridge-MPU6050-V1`: FS-i6 receiver bridge with BTS motor controller support and MPU6050 integration
+- `FSi6_Receiver-BTS_Bridge-V1`: FS-i6 receiver bridge baseline without IMU layer
 - `Arduino_BTS_bridge_Logic`: direct Arduino logic used for driving BTS7960 motor controllers
 - `Receiver_v1.1.2_esp_now`: older receiver iteration with ESP-NOW telemetry
 - `Receiver_v1.1_esp_now`: legacy receiver iteration
@@ -44,9 +47,14 @@ The current receiver firmware (`ESP32_Receiver-Direct-v2.0`):
 .
 ├── Arduino_BTS_bridge_Logic/   # Direct Arduino logic for BTS7960 motors
 ├── ESP_NOW_V1.2_OLED/          # Main transmitter firmware with optimized OLED & EMA filtering
+├── ESP_NOW_V1.1_OLED/          # Previous stable transmitter generation
 ├── ESP_NOW_V1.0_OLED/          # Earlier transmitter version
 ├── ESP32_Receiver-Direct-v2.0/ # Main receiver firmware with motor control addon
+├── ESP32_Receiver-Direct-MPU6050-v3.0/ # Direct receiver with MPU6050-assisted drive logic
 ├── ESP32_Receiver-Direct-v1.0/ # Basic receiver version (without motor control)
+├── FSi6_Receiver-BTS_Bridge-MPU6050-V1/ # FS-i6 receiver bridge with MPU6050 support
+├── FSi6_Receiver-BTS_Bridge-V1/ # FS-i6 receiver bridge baseline (no IMU)
+├── Receiver_v1.1.2_esp_now/    # Legacy receiver with telemetry reply path
 ├── Receiver_v1.1_esp_now/      # Earlier receiver version
 ├── docs/                       # GitHub Pages website
 └── .github/workflows/          # GitHub Pages deployment workflow

@@ -60,6 +60,19 @@
         ]
     },
     {
+        "title": "ESP32_Receiver-Direct-MPU6050-v3.0",
+        "url": "esp32-receiver-direct-mpu6050-v3.0.html",
+        "summary": "Direct receiver with MPU6050 estimator, timeout-safe commands, and mode-based motor output.",
+        "keywords": [
+            "receiver",
+            "mpu6050",
+            "imu",
+            "esp32",
+            "drive modes",
+            "v3.0"
+        ]
+    },
+    {
         "title": "Arduino_BTS_bridge_Logic",
         "url": "arduino-bts-bridge-logic.html",
         "summary": "Standalone BTS7960 bridge control logic for Arduino targets.",
@@ -68,6 +81,31 @@
             "bts7960",
             "bridge",
             "motor"
+        ]
+    },
+    {
+        "title": "FSi6_Receiver-BTS_Bridge-MPU6050-V1",
+        "url": "fsi6-receiver-bts-bridge-mpu6050-v1.html",
+        "summary": "FS-i6 receiver plus BTS bridge control with MPU6050-assisted drive logic.",
+        "keywords": [
+            "fsi6",
+            "receiver",
+            "bts7960",
+            "mpu6050",
+            "imu",
+            "bridge"
+        ]
+    },
+    {
+        "title": "FSi6_Receiver-BTS_Bridge-V1",
+        "url": "fsi6-receiver-bts-bridge-v1.html",
+        "summary": "FS-i6 receiver baseline with BTS bridge motor control and no IMU layer.",
+        "keywords": [
+            "fsi6",
+            "receiver",
+            "bts7960",
+            "bridge",
+            "baseline"
         ]
     },
     {
