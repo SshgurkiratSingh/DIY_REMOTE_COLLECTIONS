@@ -11,34 +11,9 @@
   }
 
   function initTheme() {
-    const toggle = document.getElementById("theme-toggle");
-    const stored = localStorage.getItem("docs-theme");
-    if (stored === "light") {
-      root.setAttribute("data-theme", "light");
-    }
-    if (!toggle) return;
-
-    const syncLabel = () => {
-      const isLight = root.getAttribute("data-theme") === "light";
-      toggle.textContent = isLight ? "Dark" : "Light";
-      toggle.setAttribute(
-        "aria-label",
-        isLight ? "Switch to dark theme" : "Switch to light theme",
-      );
-    };
-
-    syncLabel();
-    toggle.addEventListener("click", () => {
-      const isLight = root.getAttribute("data-theme") === "light";
-      if (isLight) {
-        root.removeAttribute("data-theme");
-        localStorage.setItem("docs-theme", "dark");
-      } else {
-        root.setAttribute("data-theme", "light");
-        localStorage.setItem("docs-theme", "light");
-      }
-      syncLabel();
-    });
+    // Dark-only mode: clear legacy preference and enforce default theme.
+    root.removeAttribute("data-theme");
+    localStorage.removeItem("docs-theme");
   }
 
   function initCodeCopy() {

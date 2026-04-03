@@ -2,19 +2,19 @@
 
 An ESP32-based remote control collection centered around an ESP-NOW handheld transmitter with OLED UI, rotary-encoder navigation, persistent target storage, and an optional telemetry reply path from the receiver.
 
-The repository currently contains multiple firmware snapshots traversing different versions and additions:
+The repository is now grouped by role and version for easier browsing:
 
-- `ESP_NOW_V1.2_OLED`: main handheld transmitter with OLED UI, EMA filtering, and captive-portal target management
-- `ESP_NOW_V1.1_OLED`: older OLED transmitter iteration
-- `ESP_NOW_V1.0_OLED`: initial OLED transmitter iteration
-- `ESP32_Receiver-Direct-v2.0`: main receiver featuring direct dual motor control (BTS7960/L298N) and structural reply
-- `ESP32_Receiver-Direct-MPU6050-v3.0`: direct ESP-NOW receiver with MPU6050 estimator and mode-aware drive control
-- `ESP32_Receiver-Direct-v1.0`: basic receiver without motor control
-- `FSi6_Receiver-BTS_Bridge-MPU6050-V1`: FS-i6 receiver bridge with BTS motor controller support and MPU6050 integration
-- `FSi6_Receiver-BTS_Bridge-V1`: FS-i6 receiver bridge baseline without IMU layer
-- `Arduino_BTS_bridge_Logic`: direct Arduino logic used for driving BTS7960 motor controllers
-- `Receiver_v1.1.2_esp_now`: older receiver iteration with ESP-NOW telemetry
-- `Receiver_v1.1_esp_now`: legacy receiver iteration
+- `firmware/transmitter/esp-now-oled/v1.2`: main handheld transmitter with OLED UI, EMA filtering, and captive-portal target management
+- `firmware/transmitter/esp-now-oled/v1.1`: older OLED transmitter iteration
+- `firmware/transmitter/esp-now-oled/v1.0`: initial OLED transmitter iteration
+- `firmware/receiver/direct-bts/v2.0`: main direct receiver with dual motor control and reply support
+- `firmware/receiver/direct-bts/v1.0`: basic direct receiver without motor control
+- `firmware/receiver/direct-bts-mpu6050/v3.0`: direct ESP-NOW receiver with MPU6050 estimator and mode-aware drive control
+- `firmware/receiver/fsi6-bts/mpu6050-v1`: FS-i6 receiver bridge with BTS controller support and MPU6050 integration
+- `firmware/receiver/fsi6-bts/v1`: FS-i6 receiver bridge baseline without IMU layer
+- `firmware/receiver/esp-now-legacy/v1.1.2`: legacy receiver iteration with ESP-NOW telemetry
+- `firmware/receiver/esp-now-legacy/v1.1`: legacy receiver baseline iteration
+- `bridges/arduino-bts`: direct Arduino logic used for driving BTS7960 motor controllers
 
 ## What This Project Does
 
@@ -33,7 +33,7 @@ It then sends the live control state over ESP-NOW to a selected receiver. The OL
 - adjust deadzone, inversion, TX rate, telemetry mode, and LED mode
 - view device info such as firmware version and MAC address
 
-The current receiver firmware (`ESP32_Receiver-Direct-v2.0`):
+The current receiver firmware (`firmware/receiver/direct-bts/v2.0`):
 
 - listens for the transmitted control packet
 - drives external motors directly (e.g. via BTS7960 or L298N driver using the mapped pins)
@@ -45,24 +45,33 @@ The current receiver firmware (`ESP32_Receiver-Direct-v2.0`):
 
 ```text
 .
-├── Arduino_BTS_bridge_Logic/   # Direct Arduino logic for BTS7960 motors
-├── ESP_NOW_V1.2_OLED/          # Main transmitter firmware with optimized OLED & EMA filtering
-├── ESP_NOW_V1.1_OLED/          # Previous stable transmitter generation
-├── ESP_NOW_V1.0_OLED/          # Earlier transmitter version
-├── ESP32_Receiver-Direct-v2.0/ # Main receiver firmware with motor control addon
-├── ESP32_Receiver-Direct-MPU6050-v3.0/ # Direct receiver with MPU6050-assisted drive logic
-├── ESP32_Receiver-Direct-v1.0/ # Basic receiver version (without motor control)
-├── FSi6_Receiver-BTS_Bridge-MPU6050-V1/ # FS-i6 receiver bridge with MPU6050 support
-├── FSi6_Receiver-BTS_Bridge-V1/ # FS-i6 receiver bridge baseline (no IMU)
-├── Receiver_v1.1.2_esp_now/    # Legacy receiver with telemetry reply path
-├── Receiver_v1.1_esp_now/      # Earlier receiver version
+├── firmware/
+│   ├── transmitter/
+│   │   └── esp-now-oled/
+│   │       ├── v1.0/
+│   │       ├── v1.1/
+│   │       └── v1.2/
+│   └── receiver/
+│       ├── direct-bts/
+│       │   ├── v1.0/
+│       │   └── v2.0/
+│       ├── direct-bts-mpu6050/
+│       │   └── v3.0/
+│       ├── fsi6-bts/
+│       │   ├── v1/
+│       │   └── mpu6050-v1/
+│       └── esp-now-legacy/
+│           ├── v1.1/
+│           └── v1.1.2/
+├── bridges/
+│   └── arduino-bts/
 ├── docs/                       # GitHub Pages website
 └── .github/workflows/          # GitHub Pages deployment workflow
 ```
 
 ## Main Firmware Notes
 
-### Transmitter: `ESP_NOW_V1.2_OLED`
+### Transmitter: `firmware/transmitter/esp-now-oled/v1.2`
 
 Key features implemented in code:
 
@@ -85,7 +94,7 @@ Default persisted settings loaded by the firmware:
 - `rxEnabled = false`
 - `ledMode = LED_TX_RX`
 
-### Receiver: `ESP32_Receiver-Direct-v2.0`
+### Receiver: `firmware/receiver/direct-bts/v2.0`
 
 Current behavior:
 
@@ -99,7 +108,7 @@ Current behavior:
 
 ## Pin Mapping
 
-The main transmitter pin configuration in `ESP_NOW_V1.2_OLED/include/Config.h` is:
+The main transmitter pin configuration in `firmware/transmitter/esp-now-oled/v1.2/include/Config.h` is:
 
 | Function                   | Pin |
 | -------------------------- | --: |
@@ -156,20 +165,20 @@ This repo uses PlatformIO.1. Install prerequisites
 
 Each firmware variant is its own standalone PlatformIO project. Open one of these folders directly:
 
-- `ESP_NOW_V1.2_OLED`
-- `ESP32_Receiver-Direct-v2.0`
+- `firmware/transmitter/esp-now-oled/v1.2`
+- `firmware/receiver/direct-bts/v2.0`
 
 ### 3. Build
 
 Examples:
 
 ```bash
-cd ESP_NOW_V1.2_OLED
+cd firmware/transmitter/esp-now-oled/v1.2
 pio run
 ```
 
 ```bash
-cd ESP32_Receiver-Direct-v2.0
+cd firmware/receiver/direct-bts/v2.0
 pio run
 ```
 
@@ -189,13 +198,13 @@ pio device monitor
 
 ### Receiver setup
 
-1. Flash `ESP32_Receiver-Direct-v2.0` to an ESP32.
+1. Flash `firmware/receiver/direct-bts/v2.0` to an ESP32.
 2. Open the serial monitor at `115200`.
 3. Note the printed receiver MAC address.
 
 ### Transmitter setup
 
-1. Flash `ESP_NOW_V1.2_OLED` to another ESP32.
+1. Flash `firmware/transmitter/esp-now-oled/v1.2` to another ESP32.
 2. Enter the settings menu.
 3. Choose `Add Tgt(AP)` to start the captive portal.
 4. Connect to Wi-Fi SSID `ESP-NOW-REMOTE` with password `12345678`.

@@ -1,0 +1,8 @@
+# Include Directory
+
+Header files for `firmware/receiver/esp-now-legacy/v1.1.2`.
+
+## Contents
+- Interface declarations
+- Shared type definitions
+- Build-time constants

@@ -1,0 +1,7 @@
+# Library Directory
+
+Custom/private library code for `firmware/transmitter/esp-now-oled/v1.1`.
+
+## Notes
+- Add reusable modules here
+- Keep hardware-agnostic helpers in this folder when possible

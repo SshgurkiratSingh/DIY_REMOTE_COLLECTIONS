@@ -1,0 +1,7 @@
+# Library Directory
+
+Custom/private library code for `firmware/receiver/fsi6-bts/mpu6050-v1`.
+
+## Notes
+- Add reusable modules here
+- Keep hardware-agnostic helpers in this folder when possible

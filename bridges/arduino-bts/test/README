@@ -1,0 +1,6 @@
+# Test Directory
+
+Unit/integration tests for `bridges/arduino-bts`.
+
+## PlatformIO
+Use `pio test` from the project root folder to execute tests.

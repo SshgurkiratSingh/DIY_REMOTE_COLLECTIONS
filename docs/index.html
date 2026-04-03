@@ -27,7 +27,6 @@
           <a href="pinout.html">Pinout</a>
 </div>
           </div>
-          <button id="theme-toggle" class="theme-btn" type="button" aria-label="Toggle theme">Light</button>
         </nav>
 
         <section class="hero-grid">
@@ -93,17 +92,17 @@
             <table>
               <thead><tr><th>Folder</th><th>Role</th><th>Notes</th></tr></thead>
               <tbody>
-                <tr><td><a href="esp-now-v1.2-oled.html"><code>ESP_NOW_V1.2_OLED</code></a></td><td>Main transmitter</td><td>OLED update optimization, EMA filtering, hysteresis deadzone, portal pairing</td></tr>
-                <tr><td><a href="esp-now-v1.1-oled.html"><code>ESP_NOW_V1.1_OLED</code></a></td><td>Older transmitter</td><td>Stable UI and settings architecture with portal and telemetry callback support</td></tr>
-                <tr><td><a href="esp-now-v1.0-oled.html"><code>ESP_NOW_V1.0_OLED</code></a></td><td>Initial transmitter</td><td>Minimal packet + display baseline implementation</td></tr>
-                <tr><td><a href="esp32-receiver-direct-v2.0.html"><code>ESP32_Receiver-Direct-v2.0</code></a></td><td>Main receiver</td><td>Direct motor logic for dual channels with PWM and response packets</td></tr>
-                <tr><td><a href="esp32-receiver-direct-mpu6050-v3.0.html"><code>ESP32_Receiver-Direct-MPU6050-v3.0</code></a></td><td>Direct receiver + IMU</td><td>ESP-NOW direct drive with MPU6050 estimator and mode-aware control</td></tr>
-                <tr><td><a href="esp32-receiver-direct-v1.0.html"><code>ESP32_Receiver-Direct-v1.0</code></a></td><td>Basic receiver</td><td>Serial monitoring focused variant without integrated motor stage</td></tr>
-                <tr><td><a href="arduino-bts-bridge-logic.html"><code>Arduino_BTS_bridge_Logic</code></a></td><td>Addon module</td><td>Arduino-side bridge logic for BTS7960 controlled motor systems</td></tr>
-                <tr><td><a href="fsi6-receiver-bts-bridge-mpu6050-v1.html"><code>FSi6_Receiver-BTS_Bridge-MPU6050-V1</code></a></td><td>FS-i6 bridge + IMU</td><td>RC receiver stack with BTS bridge and MPU6050 sensor-assisted control</td></tr>
-                <tr><td><a href="fsi6-receiver-bts-bridge-v1.html"><code>FSi6_Receiver-BTS_Bridge-V1</code></a></td><td>FS-i6 bridge baseline</td><td>RC receiver to BTS bridge motor drive without IMU layer</td></tr>
-                <tr><td><a href="receiver-v1.1.2-esp-now.html"><code>Receiver_v1.1.2_esp_now</code></a></td><td>Legacy receiver</td><td>Telemetry validation generation and structured reply path</td></tr>
-                <tr><td><a href="receiver-v1.1-esp-now.html"><code>Receiver_v1.1_esp_now</code></a></td><td>Legacy receiver</td><td>First simple one-way receiver callback implementation</td></tr>
+                <tr><td><a href="esp-now-v1.2-oled.html"><code>firmware/transmitter/esp-now-oled/v1.2</code></a></td><td>Main transmitter</td><td>OLED update optimization, EMA filtering, hysteresis deadzone, portal pairing</td></tr>
+                <tr><td><a href="esp-now-v1.1-oled.html"><code>firmware/transmitter/esp-now-oled/v1.1</code></a></td><td>Older transmitter</td><td>Stable UI and settings architecture with portal and telemetry callback support</td></tr>
+                <tr><td><a href="esp-now-v1.0-oled.html"><code>firmware/transmitter/esp-now-oled/v1.0</code></a></td><td>Initial transmitter</td><td>Minimal packet + display baseline implementation</td></tr>
+                <tr><td><a href="esp32-receiver-direct-v2.0.html"><code>firmware/receiver/direct-bts/v2.0</code></a></td><td>Main receiver</td><td>Direct motor logic for dual channels with PWM and response packets</td></tr>
+                <tr><td><a href="esp32-receiver-direct-mpu6050-v3.0.html"><code>firmware/receiver/direct-bts-mpu6050/v3.0</code></a></td><td>Direct receiver + IMU</td><td>ESP-NOW direct drive with MPU6050 estimator and mode-aware control</td></tr>
+                <tr><td><a href="esp32-receiver-direct-v1.0.html"><code>firmware/receiver/direct-bts/v1.0</code></a></td><td>Basic receiver</td><td>Serial monitoring focused variant without integrated motor stage</td></tr>
+                <tr><td><a href="arduino-bts-bridge-logic.html"><code>bridges/arduino-bts</code></a></td><td>Addon module</td><td>Arduino-side bridge logic for BTS7960 controlled motor systems</td></tr>
+                <tr><td><a href="fsi6-receiver-bts-bridge-mpu6050-v1.html"><code>firmware/receiver/fsi6-bts/mpu6050-v1</code></a></td><td>FS-i6 bridge + IMU</td><td>RC receiver stack with BTS bridge and MPU6050 sensor-assisted control</td></tr>
+                <tr><td><a href="fsi6-receiver-bts-bridge-v1.html"><code>firmware/receiver/fsi6-bts/v1</code></a></td><td>FS-i6 bridge baseline</td><td>RC receiver to BTS bridge motor drive without IMU layer</td></tr>
+                <tr><td><a href="receiver-v1.1.2-esp-now.html"><code>firmware/receiver/esp-now-legacy/v1.1.2</code></a></td><td>Legacy receiver</td><td>Telemetry validation generation and structured reply path</td></tr>
+                <tr><td><a href="receiver-v1.1-esp-now.html"><code>firmware/receiver/esp-now-legacy/v1.1</code></a></td><td>Legacy receiver</td><td>First simple one-way receiver callback implementation</td></tr>
               </tbody>
             </table>
           </div>
@@ -151,7 +150,7 @@
             <article class="card">
               <h3>1. Flash receiver</h3>
               <p>Upload the receiver first and keep serial monitor open to capture MAC address.</p>
-              <pre><code class="language-bash">cd ESP32_Receiver-Direct-v2.0
+              <pre><code class="language-bash">cd firmware/receiver/direct-bts/v2.0
 pio run
 pio run --target upload
 pio device monitor</code></pre>
@@ -159,7 +158,7 @@ pio device monitor</code></pre>
             <article class="card">
               <h3>2. Flash transmitter</h3>
               <p>Upload the transmitter, open settings, and register receiver from captive portal.</p>
-              <pre><code class="language-bash">cd ESP_NOW_V1.2_OLED
+              <pre><code class="language-bash">cd firmware/transmitter/esp-now-oled/v1.2
 pio run
 pio run --target upload</code></pre>
             </article>

@@ -24,7 +24,6 @@
           <a href="setup-wizard.html">Wizard</a>
           <a href="pinout.html">Pinout</a>
 </div>
-      <button id="theme-toggle" class="theme-btn" type="button" aria-label="Toggle theme">Light</button>
     </nav>
 
     <main>
@@ -52,7 +51,7 @@ RIGHT: RPWM=25 LPWM=26 LEN=27 REN=14</code></pre>
           <p>Receiver adds sender dynamically and transmits struct_reply to support basic telemetry acknowledgement on each session.</p>
         
           <h3>Build / Flash</h3>
-          <pre><code class="language-bash">cd ESP32_Receiver-Direct-v2.0
+          <pre><code class="language-bash">cd firmware/receiver/direct-bts/v2.0
 pio run
 pio run --target upload</code></pre>
         </article>

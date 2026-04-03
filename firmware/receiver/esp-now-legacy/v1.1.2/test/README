@@ -1,0 +1,6 @@
+# Test Directory
+
+Unit/integration tests for `firmware/receiver/esp-now-legacy/v1.1.2`.
+
+## PlatformIO
+Use `pio test` from the project root folder to execute tests.

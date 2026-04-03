@@ -1,0 +1,8 @@
+# Include Directory
+
+Header files for `firmware/receiver/direct-bts/v1.0`.
+
+## Contents
+- Interface declarations
+- Shared type definitions
+- Build-time constants

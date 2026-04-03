@@ -1,0 +1,7 @@
+# Library Directory
+
+Custom/private library code for `firmware/receiver/direct-bts/v1.0`.
+
+## Notes
+- Add reusable modules here
+- Keep hardware-agnostic helpers in this folder when possible

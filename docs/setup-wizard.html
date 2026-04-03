@@ -23,7 +23,6 @@
           <a href="setup-wizard.html">Wizard</a>
           <a href="pinout.html">Pinout</a>
 </div>
-      <button id="theme-toggle" class="theme-btn" type="button">Light</button>
     </nav>
     <main>
       <section class="section">
@@ -33,7 +32,7 @@
           <p class="lede">Follow this checklist to bring both boards online with predictable results.</p>
           <h3>Step 1 - Receiver first</h3>
           <h4>Flash and monitor</h4>
-          <pre><code class="language-bash">cd ESP32_Receiver-Direct-v2.0
+          <pre><code class="language-bash">cd firmware/receiver/direct-bts/v2.0
 pio run
 pio run --target upload
 pio device monitor</code></pre>
@@ -42,7 +41,7 @@ pio device monitor</code></pre>
           <p>Record the printed receiver MAC. You will enter this in AP portal on transmitter.</p>
           <h3>Step 3 - Transmitter upload</h3>
           <h4>Flash current main variant</h4>
-          <pre><code class="language-bash">cd ESP_NOW_V1.2_OLED
+          <pre><code class="language-bash">cd firmware/transmitter/esp-now-oled/v1.2
 pio run
 pio run --target upload</code></pre>
           <h3>Step 4 - Pairing</h3>

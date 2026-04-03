@@ -24,7 +24,6 @@
         <a href="setup-wizard.html">Wizard</a>
         <a href="pinout.html">Pinout</a>
       </div>
-      <button id="theme-toggle" class="theme-btn" type="button" aria-label="Toggle theme">Light</button>
     </nav>
 
     <main>
@@ -67,7 +66,7 @@ imuEstimator.update(dt, imuState);</code></pre>
           <p>Use this variant for motion-aware receivers where orientation should influence direction control and stabilization behavior, while still accepting the standard remote payload format.</p>
 
           <h3>Build / Flash</h3>
-          <pre><code class="language-bash">cd ESP32_Receiver-Direct-MPU6050-v3.0
+          <pre><code class="language-bash">cd firmware/receiver/direct-bts-mpu6050/v3.0
 pio run
 pio run --target upload</code></pre>
         </article>

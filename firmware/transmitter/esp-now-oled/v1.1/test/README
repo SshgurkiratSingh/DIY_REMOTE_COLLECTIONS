@@ -1,0 +1,6 @@
+# Test Directory
+
+Unit/integration tests for `firmware/transmitter/esp-now-oled/v1.1`.
+
+## PlatformIO
+Use `pio test` from the project root folder to execute tests.
