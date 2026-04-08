@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <esp_now.h>
 #include <WiFi.h>
-
+const uint8_t PAIRING_CODE = 42;
 typedef struct struct_message
 {
   uint16_t joyX;
@@ -11,6 +11,7 @@ typedef struct struct_message
   bool toggle2;
   bool push1;
   bool push2;
+  uint8_t verifyKey;
 } struct_message;
 
 typedef struct struct_reply
@@ -53,8 +54,8 @@ const int PWM_FREQ = 5000;
 const int PWM_RESOLUTION = 8;
 const int PWM_MAX = 255;
 const int JOY_MAX = 4095;
-const int JOY_DEADZONE = 120;
-const int BURST_SPEED_LIMIT = 155;
+const int JOY_DEADZONE = 50;
+const int BURST_SPEED_LIMIT = 225;
 
 // Ramp control
 const float MIN_RAMP_RATE = 100.0;  // 2.5 seconds to full speed at min pot
@@ -144,6 +145,9 @@ void printReceivedData(const struct_message &incomingData)
 
   Serial.print("push2: ");
   Serial.println(incomingData.push2);
+
+  Serial.print("verifyKey: ");
+  Serial.println(incomingData.verifyKey);
 }
 
 uint8_t readBuiltInSensorValue()
@@ -282,6 +286,8 @@ void applyDriveFromMessage(const struct_message &incomingData)
   Serial.println(targetRightSpeed);
 }
 
+// Hardcoded pairing code to match transmitter
+
 void handleReceivedPacket(const uint8_t *macAddress, const uint8_t *data, int dataLen)
 {
   Serial.print("Sender MAC: ");
@@ -299,6 +305,15 @@ void handleReceivedPacket(const uint8_t *macAddress, const uint8_t *data, int da
 
   struct_message incomingData;
   memcpy(&incomingData, data, sizeof(incomingData));
+
+  // Verify the payload using the pairing code
+  if (incomingData.verifyKey != PAIRING_CODE)
+  {
+    Serial.println("Invalid verifyKey. Ignoring packet.");
+    Serial.println();
+    return;
+  }
+
   printReceivedData(incomingData);
   applyDriveFromMessage(incomingData);
   // sendReply(macAddress, incomingData);
