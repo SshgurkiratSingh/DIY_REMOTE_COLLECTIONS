@@ -1,11 +1,11 @@
-# FS-i6 BTS Receiver MPU6050 v1
+# FS-i6 BTS Receiver v1.1-mpu
 
 ## Purpose
 FS-i6 RC bridge receiver with MPU6050-assisted drive behavior.
 
 ## Build/Upload
 ```bash
-cd firmware/receiver/fsi6-bts/mpu6050-v1
+cd firmware/receiver/fsi6-bts/v1.1-mpu
 pio run
 pio run --target upload
 ```

@@ -1,7 +1,7 @@
 #include <Arduino.h>
 #include <esp_now.h>
 #include <WiFi.h>
-const uint8_t PAIRING_CODE = 42;
+const uint8_t PAIRING_CODE = 50;
 typedef struct struct_message
 {
   uint16_t joyX;
@@ -55,7 +55,7 @@ const int PWM_RESOLUTION = 8;
 const int PWM_MAX = 255;
 const int JOY_MAX = 4095;
 const int JOY_DEADZONE = 50;
-const int BURST_SPEED_LIMIT = 225;
+const int BURST_SPEED_LIMIT = 255;
 
 // Ramp control
 const float MIN_RAMP_RATE = 100.0;  // 2.5 seconds to full speed at min pot
@@ -231,7 +231,7 @@ int mapJoystickSigned(uint16_t raw, int speedLimit)
 int speedLimitFromPot(uint16_t potValue)
 {
   uint16_t clampedPot = min(potValue, (uint16_t)4000);
-  return map(clampedPot, 0, 4000, 0, 155);
+  return map(clampedPot, 0, 4000, 0, 255);
 }
 
 void applyDriveFromMessage(const struct_message &incomingData)

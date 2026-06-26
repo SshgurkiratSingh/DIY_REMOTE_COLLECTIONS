@@ -1,11 +1,11 @@
-# FS-i6 BTS Receiver v1
+# FS-i6 BTS Receiver v1.0
 
 ## Purpose
 Baseline FS-i6 RC to BTS motor bridge receiver without IMU layer.
 
 ## Build/Upload
 ```bash
-cd firmware/receiver/fsi6-bts/v1
+cd firmware/receiver/fsi6-bts/v1.0
 pio run
 pio run --target upload
 ```

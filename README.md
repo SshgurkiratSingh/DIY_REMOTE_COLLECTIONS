@@ -8,10 +8,14 @@ The repository is now grouped by role and version for easier browsing:
 - `firmware/transmitter/esp-now-oled/v1.1`: older OLED transmitter iteration
 - `firmware/transmitter/esp-now-oled/v1.0`: initial OLED transmitter iteration
 - `firmware/receiver/direct-bts/v2.0`: main direct receiver with dual motor control and reply support
+- `firmware/receiver/direct-bts/v2.1`: direct receiver variant (MPU-influenced changes)
+- `firmware/receiver/direct-bts/v3.0`: extended direct receiver iteration
 - `firmware/receiver/direct-bts/v1.0`: basic direct receiver without motor control
 - `firmware/receiver/direct-bts-mpu6050/v3.0`: direct ESP-NOW receiver with MPU6050 estimator and mode-aware drive control
-- `firmware/receiver/fsi6-bts/mpu6050-v1`: FS-i6 receiver bridge with BTS controller support and MPU6050 integration
-- `firmware/receiver/fsi6-bts/v1`: FS-i6 receiver bridge baseline without IMU layer
+- `firmware/receiver/fsi6-bts/v1.1-mpu`: FS-i6 receiver bridge with BTS controller support and MPU6050 integration
+- `firmware/receiver/fsi6-bts/v1.0`: FS-i6 receiver bridge baseline without IMU layer
+- `firmware/receiver/fsi6-bts/v1.0-l2n`: FS-i6 bridge with L298N motor driver
+- `firmware/receiver/fsi6-bts/v1.1-mpu-l2n`: FS-i6 bridge with MPU6050 + L298N
 - `firmware/receiver/esp-now-legacy/v1.1.2`: legacy receiver iteration with ESP-NOW telemetry
 - `firmware/receiver/esp-now-legacy/v1.1`: legacy receiver baseline iteration
 - `bridges/arduino-bts`: direct Arduino logic used for driving BTS7960 motor controllers
@@ -54,12 +58,16 @@ The current receiver firmware (`firmware/receiver/direct-bts/v2.0`):
 │   └── receiver/
 │       ├── direct-bts/
 │       │   ├── v1.0/
-│       │   └── v2.0/
+│       │   ├── v2.0/
+│       │   ├── v2.1/
+│       │   └── v3.0/
 │       ├── direct-bts-mpu6050/
 │       │   └── v3.0/
 │       ├── fsi6-bts/
-│       │   ├── v1/
-│       │   └── mpu6050-v1/
+│       │   ├── v1.0/
+│       │   ├── v1.0-l2n/
+│       │   ├── v1.1-mpu/
+│       │   └── v1.1-mpu-l2n/
 │       └── esp-now-legacy/
 │           ├── v1.1/
 │           └── v1.1.2/
@@ -166,7 +174,7 @@ This repo uses PlatformIO.1. Install prerequisites
 Each firmware variant is its own standalone PlatformIO project. Open one of these folders directly:
 
 - `firmware/transmitter/esp-now-oled/v1.2`
-- `firmware/receiver/direct-bts/v2.0`
+- `firmware/receiver/direct-bts/v2.0` (or v2.1 / v3.0)
 
 ### 3. Build
 
