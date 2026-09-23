@@ -17,6 +17,7 @@ void StorageManager::loadConfig(SystemConfig &config)
     config.ledMode = preferences.getUChar("ledMode", LED_TX_RX);
     config.outType = preferences.getUChar("outType", OUT_LEDS);
     config.feedbackMode = preferences.getUChar("fdbkMode", FB_VIB_BUZ);
+    config.addrLedMode = preferences.getUChar("addrLedMode", 0);
 }
 
 void StorageManager::saveConfig(const SystemConfig &config)
@@ -31,6 +32,7 @@ void StorageManager::saveConfig(const SystemConfig &config)
     preferences.putUChar("ledMode", config.ledMode);
     preferences.putUChar("outType", config.outType);
     preferences.putUChar("fdbkMode", config.feedbackMode);
+    preferences.putUChar("addrLedMode", config.addrLedMode);
 }
 
 void StorageManager::factoryReset()

@@ -94,6 +94,7 @@ typedef struct struct_message {
     bool     push1;
     bool     push2;
     uint8_t  verifyKey;
+    uint8_t  addrLedMode;
 } struct_message;
 
 // Feedback to transmitter (rx_message, 3 bytes)
@@ -582,26 +583,16 @@ void updateLEDs() {
 // ============================================================================
 
 void handleButtons() {
-    // Push1: cycle LED mode forward (rising edge)
-    if (incomingData.push1 && !lastPush1) {
-        ledMode = (ledMode + 1) % TOTAL_LED_MODES;
-        animStep = 0;
-        animTimer = 0;
-        Serial.print("LED Mode → ");
-        Serial.println(ledMode);
+    // Sync led mode with transmitter's setting
+    if (ledMode != incomingData.addrLedMode) {
+        if (incomingData.addrLedMode < TOTAL_LED_MODES) {
+            ledMode = incomingData.addrLedMode;
+            animStep = 0;
+            animTimer = 0;
+            Serial.print("LED Mode (from remote setting) → ");
+            Serial.println(ledMode);
+        }
     }
-
-    // Push2: cycle LED mode backward (rising edge)
-    if (incomingData.push2 && !lastPush2) {
-        ledMode = (ledMode + TOTAL_LED_MODES - 1) % TOTAL_LED_MODES;
-        animStep = 0;
-        animTimer = 0;
-        Serial.print("LED Mode → ");
-        Serial.println(ledMode);
-    }
-
-    lastPush1 = incomingData.push1;
-    lastPush2 = incomingData.push2;
 
     // Toggle1: motor-LED sync
     motorSyncEnabled = incomingData.toggle1;
@@ -724,6 +715,7 @@ void setup() {
     incomingData.push1    = false;
     incomingData.push2    = false;
     incomingData.verifyKey = 0;
+    incomingData.addrLedMode = 0;
 
     // Startup LED animation (quick rainbow sweep)
     for (int h = 0; h < 256; h += 8) {

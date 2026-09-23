@@ -66,6 +66,7 @@ typedef struct struct_message
     bool push1;
     bool push2;
     uint8_t verifyKey;
+    uint8_t addrLedMode;
 } struct_message;
 
 // --- Received Data Packet ---
@@ -99,6 +100,7 @@ struct SystemConfig
     uint8_t ledMode;
     uint8_t outType;
     uint8_t feedbackMode;
+    uint8_t addrLedMode;
 };
 
 // Replace with receiver MAC address

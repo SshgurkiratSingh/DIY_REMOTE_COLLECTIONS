@@ -214,15 +214,15 @@ void DisplayManager::update(const struct_message *data, bool sendStatus, MenuSta
 
         const char *items[] = {
             "Add Tgt(AP)", "Deadzone", "Inv X/Y", "Factory Rst",
-            "Tx Rate", "Rx Mode", "LED Maps", "Out Type", "Feedback", "Test Haptic"};
+            "Tx Rate", "Rx Mode", "LED Maps", "Out Type", "Feedback", "Test Haptic", "Addr LED"};
 
-        int safeSubIndex = subIndex < 0 ? 0 : (subIndex > 9 ? 9 : subIndex);
+        int safeSubIndex = subIndex < 0 ? 0 : (subIndex > 10 ? 10 : subIndex);
 
         int startIdx = safeSubIndex - 3;
         if (startIdx < 0)
             startIdx = 0;
-        if (startIdx > 3)
-            startIdx = 3; // max window offset (10 items - 7 visible = 3)
+        if (startIdx > 4)
+            startIdx = 4; // max window offset (11 items - 7 visible = 4)
 
         for (int i = startIdx; i < startIdx + 7; i++)
         {
@@ -264,6 +264,10 @@ void DisplayManager::update(const struct_message *data, bool sendStatus, MenuSta
             else if (i == 9)
             {
                 snprintf(buf, sizeof(buf), "9. Test Feedback");
+            }
+            else if (i == 10)
+            {
+                snprintf(buf, sizeof(buf), "10. Addr LED: %d", config.addrLedMode);
             }
             else
                 snprintf(buf, sizeof(buf), "%d. %s", i, items[i]);
@@ -335,6 +339,10 @@ void DisplayManager::update(const struct_message *data, bool sendStatus, MenuSta
         {
             const char *fbModes[] = {"SILENT", "VIB", "BUZZ", "BOTH"};
             display.printf("FB: %s", config.feedbackMode < 4 ? fbModes[config.feedbackMode] : "UNK");
+        }
+        else if (subIndex == 10)
+        {
+            display.printf("Addr LED: %d", config.addrLedMode);
         }
         else
         {

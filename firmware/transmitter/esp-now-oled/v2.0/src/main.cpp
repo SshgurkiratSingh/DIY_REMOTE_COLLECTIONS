@@ -180,6 +180,16 @@ void loop()
         sysConfig.feedbackMode = (uint8_t)newFb;
         break;
       }
+      case 10: // Addr LED Mode
+      {
+        int newMode = (int)sysConfig.addrLedMode + encDiff;
+        if (newMode < 0)
+          newMode = 11;
+        if (newMode > 11)
+          newMode = 0;
+        sysConfig.addrLedMode = (uint8_t)newMode;
+        break;
+      }
         // Add case 3: Channel later
       }
     }
@@ -214,9 +224,9 @@ void loop()
       else if (fsmState == STATE_SETTINGS)
       {
         if (subIndex < 0)
-          subIndex = 9;
-        if (subIndex > 9)
-          subIndex = 0; // 10 options (0-9)
+          subIndex = 10;
+        if (subIndex > 10)
+          subIndex = 0; // 11 options (0-10)
       }
     }
     lastEncoderPos = currentEnc;
@@ -338,6 +348,7 @@ void loop()
     }
 
     telemetryData.verifyKey = activeVerifyKey;
+    telemetryData.addrLedMode = sysConfig.addrLedMode;
 
     networkManager.sendData(&telemetryData);
 
