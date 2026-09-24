@@ -28,7 +28,7 @@
 #define SCREEN_HEIGHT 64 // Or 64 based on your actual display
 #define OLED_ADDR 0x3C
 
-#define FIRMWARE_VERSION "v1.2.0"
+#define FIRMWARE_VERSION "v2.0"
 
 enum LedMode
 {

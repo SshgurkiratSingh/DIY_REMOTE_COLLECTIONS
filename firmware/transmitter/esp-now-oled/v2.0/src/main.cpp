@@ -184,8 +184,8 @@ void loop()
       {
         int newMode = (int)sysConfig.addrLedMode + encDiff;
         if (newMode < 0)
-          newMode = 11;
-        if (newMode > 11)
+          newMode = 9;
+        if (newMode > 9)
           newMode = 0;
         sysConfig.addrLedMode = (uint8_t)newMode;
         break;
