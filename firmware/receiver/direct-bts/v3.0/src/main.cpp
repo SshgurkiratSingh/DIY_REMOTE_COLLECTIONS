@@ -2,7 +2,7 @@
 #include <esp_now.h>
 #include <WiFi.h>
 const uint8_t PAIRING_CODE = 50;
-typedef struct struct_message
+typedef struct __attribute__((packed)) struct_message
 {
   uint16_t joyX;
   uint16_t joyY;
@@ -11,7 +11,8 @@ typedef struct struct_message
   bool toggle2;
   bool push1;
   bool push2;
-  uint8_t verifyKey;
+  uint8_t verifyKey;    // pairing key
+  uint8_t addrLedMode; // addressable LED mode from remote settings (ignored here)
 } struct_message;
 
 typedef struct struct_reply
