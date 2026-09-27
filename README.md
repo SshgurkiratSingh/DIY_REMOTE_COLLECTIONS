@@ -1,49 +1,172 @@
 # REMOTE_ESPNOW_LORA_RF_BLE
 
-An ESP32-based remote control collection centered around an ESP-NOW handheld transmitter with OLED UI, rotary-encoder navigation, persistent target storage, and an optional telemetry reply path from the receiver.
+An ESP32-based RC remote control collection centred around an ESP-NOW handheld transmitter with an OLED UI, rotary-encoder navigation, persistent target storage, captive-portal pairing, and a full telemetry reply path. All variants are standalone PlatformIO projects.
 
-The repository is now grouped by role and version for easier browsing:
+---
 
-- `firmware/transmitter/esp-now-oled/v1.2`: main handheld transmitter with OLED UI, EMA filtering, and captive-portal target management
-- `firmware/transmitter/esp-now-oled/v1.1`: older OLED transmitter iteration
-- `firmware/transmitter/esp-now-oled/v1.0`: initial OLED transmitter iteration
-- `firmware/receiver/direct-bts/v2.0`: main direct receiver with dual motor control and reply support
-- `firmware/receiver/direct-bts/v2.1`: direct receiver variant (MPU-influenced changes)
-- `firmware/receiver/direct-bts/v3.0`: extended direct receiver iteration
-- `firmware/receiver/direct-bts/v1.0`: basic direct receiver without motor control
-- `firmware/receiver/direct-bts-mpu6050/v3.0`: direct ESP-NOW receiver with MPU6050 estimator and mode-aware drive control
-- `firmware/receiver/fsi6-bts/v1.1-mpu`: FS-i6 receiver bridge with BTS controller support and MPU6050 integration
-- `firmware/receiver/fsi6-bts/v1.0`: FS-i6 receiver bridge baseline without IMU layer
-- `firmware/receiver/fsi6-bts/v1.0-l2n`: FS-i6 bridge with L298N motor driver
-- `firmware/receiver/fsi6-bts/v1.1-mpu-l2n`: FS-i6 bridge with MPU6050 + L298N
-- `firmware/receiver/esp-now-legacy/v1.1.2`: legacy receiver iteration with ESP-NOW telemetry
-- `firmware/receiver/esp-now-legacy/v1.1`: legacy receiver baseline iteration
-- `bridges/arduino-bts`: direct Arduino logic used for driving BTS7960 motor controllers
+## Firmware Overview
 
-## What This Project Does
+### Transmitter
 
-The transmitter reads:
+| Version | Path | Notes |
+|---------|------|-------|
+| **v2.0** ⭐ | `firmware/transmitter/esp-now-oled/v2.0` | Current production version. Packed `struct_message`, `addrLedMode` for addressable LED control, pairing keys, haptic/buzzer feedback, 11-item settings menu. |
+| v1.3 | `firmware/transmitter/esp-now-oled/v1.3` | Pre-release v2.0 |
+| v1.2 | `firmware/transmitter/esp-now-oled/v1.2` | EMA filter, captive portal, NVS persistence |
+| v1.1 | `firmware/transmitter/esp-now-oled/v1.1` | Older OLED iteration |
+| v1.0 | `firmware/transmitter/esp-now-oled/v1.0` | Initial OLED transmitter |
 
-- 2-axis joystick
-- 1 potentiometer
-- 2 toggle switches
-- 2 push buttons
-- 1 rotary encoder with push switch
+### Receivers — `direct-bts` (ESP-NOW, BTS7960 / L298N)
 
-It then sends the live control state over ESP-NOW to a selected receiver. The OLED UI lets you:
+| Version | Path | Notes |
+|---------|------|-------|
+| **v2.0-led** ⭐ | `firmware/receiver/direct-bts/v2.0-led` | **Current production receiver.** L298N motor driver + dual WS2812B eye-matrix LED strips (10 LEDs each, 3-3-2 layout). 10 custom eye animations. Full v2.0 transmitter payload. |
+| v3.0 | `firmware/receiver/direct-bts/v3.0` | Extended receiver with pairing code (`verifyKey`) |
+| v2.1 | `firmware/receiver/direct-bts/v2.1` | Dual motor, reply support |
+| v2.0 | `firmware/receiver/direct-bts/v2.0` | Base dual-motor receiver |
+| v1.0 | `firmware/receiver/direct-bts/v1.0` | Motor test stub (no radio) |
 
-- monitor joystick and switch activity
-- browse saved receiver targets
-- adjust deadzone, inversion, TX rate, telemetry mode, and LED mode
-- view device info such as firmware version and MAC address
+### Receivers — `direct-bts-mpu6050` (ESP-NOW + IMU)
 
-The current receiver firmware (`firmware/receiver/direct-bts/v2.0`):
+| Version | Path | Notes |
+|---------|------|-------|
+| v3.0 | `firmware/receiver/direct-bts-mpu6050/v3.0` | MPU6050 estimator, mode-aware drive control (headless / full assist) |
 
-- listens for the transmitted control packet
-- drives external motors directly (e.g. via BTS7960 or L298N driver using the mapped pins)
-- prints values to the serial monitor
-- adds the sender as a peer dynamically
-- sends back a compact reply packet for simple telemetry testing
+### Receivers — `fsi6-bts` (FlySky FS-i6 IBUS protocol)
+
+| Version | Path | Notes |
+|---------|------|-------|
+| v1.1-mpu-l2n | `firmware/receiver/fsi6-bts/v1.1-mpu-l2n` | FS-i6 + MPU6050 + L298N |
+| v1.1-mpu | `firmware/receiver/fsi6-bts/v1.1-mpu` | FS-i6 + MPU6050 + BTS7960 |
+| v1.0-l2n | `firmware/receiver/fsi6-bts/v1.0-l2n` | FS-i6 + L298N |
+| v1.0 | `firmware/receiver/fsi6-bts/v1.0` | FS-i6 baseline |
+
+### Receivers — `esp-now-legacy` (older payload format)
+
+| Version | Path | Notes |
+|---------|------|-------|
+| v1.1.2 | `firmware/receiver/esp-now-legacy/v1.1.2` | Sends active reply, 7-field payload |
+| v1.1 | `firmware/receiver/esp-now-legacy/v1.1` | Includes `encoderPos` / `encSw` fields |
+
+> ⚠️ Legacy receivers use a **different, older packet format** and are not compatible with the v2.0 transmitter.
+
+---
+
+## Packet Format (v2.0 Protocol)
+
+All receivers under `direct-bts` (v2.0, v2.1, v3.0, v2.0-led) and `direct-bts-mpu6050` now use the same packed payload:
+
+### Transmitter → Receiver
+
+```cpp
+typedef struct __attribute__((packed)) struct_message {
+    uint16_t joyX;        // Joystick X axis  (0–4095, center ≈ 2048)
+    uint16_t joyY;        // Joystick Y axis  (0–4095, center ≈ 2048)
+    uint16_t potValue;    // Potentiometer    (0–4095)  → LED brightness
+    bool     toggle1;     // Toggle switch 1  → motor-LED sync
+    bool     toggle2;     // Toggle switch 2  → motor enable (safety kill)
+    bool     push1;       // Push button 1
+    bool     push2;       // Push button 2
+    uint8_t  verifyKey;   // Pairing key (0 = accept all)
+    uint8_t  addrLedMode; // Addressable LED mode (0–9), set from Settings menu
+} struct_message;  // 12 bytes
+```
+
+### Receiver → Transmitter (telemetry reply)
+
+```cpp
+typedef struct __attribute__((packed)) rx_message {
+    uint8_t data1;   // Active LED mode (0–9)
+    uint8_t data2;   // Motor-sync flag (0 or 1)
+    uint8_t data3;   // Battery level   (0–255)
+} rx_message;  // 3 bytes
+```
+
+---
+
+## Feature Highlights — v2.0 Transmitter
+
+- SSD1306 128×64 OLED with hash-based dirty-redraw (no flicker)
+- Rotary encoder menu navigation (scroll + click + double-click)
+- **11-item Settings menu:** Deadzone · Invert X/Y · TX Rate · RX Mode · LED Map · Out Type · Feedback · Haptic Test · **Addr LED Mode**
+- NVS persistence via `Preferences` (all settings survive reboot)
+- Captive-portal Wi-Fi AP for adding receiver MACs without re-flashing
+- Up to 5 saved receiver targets with last-target recall
+- Optional haptic/buzzer feedback on button events
+- Sends `addrLedMode` live to receiver every TX packet
+
+---
+
+## Feature Highlights — v2.0-led Receiver (Eye Matrix)
+
+- **Dual WS2812B LED strips** — left eye / right eye, 10 LEDs each
+- **Physical layout per eye:** Line 1 (LEDs 0-2) · hidden routing LED (3) · Line 2 (LEDs 4-6) · hidden routing LED (7) · Line 3 (LEDs 8-9)
+- Hidden LEDs (index 3 and 7) are always masked off in software
+- **10 eye animation modes** selectable from remote settings:
+
+| # | Name | Description |
+|---|------|-------------|
+| 0 | Solid Headlights | Crisp white on all visible LEDs |
+| 1 | Angry Eyes | Top + middle lines red, bottom off |
+| 2 | Scanning Pupil | Cylon-style column sweep left↔right |
+| 3 | Natural Blinking | White with periodic ~150 ms blink |
+| 4 | Sleepy Breathing | Cyan sine-pulse on lower two lines only |
+| 5 | Rainbow Flow | Hue shifts across the eye row-by-row |
+| 6 | Hypnotic Lines | Cycles top→mid→bottom with colour change |
+| 7 | Fire Flicker | Organic random warm flame |
+| 8 | Police Strobe | Left eye red, right eye blue, alternating |
+| 9 | Cyber Sparkle | Random-hue digital twinkling |
+
+- **Motor-LED sync mode** (Toggle 1): LEDs reflect driving state
+  - Idle → gentle green breathing
+  - Forward → green sparkle sweep
+  - Reverse → red sparkle sweep  
+  - Turning → orange blink on turn side
+  - Full speed → rapid rainbow burst
+  - Braking → red flash
+- **Motor enable/disable** (Toggle 2 — safety kill switch)
+- **Live brightness** from potentiometer (floor at 10 so strip never goes dark)
+- **Signal-loss indicator:** slow red pulse when no packet received > 1 s
+
+---
+
+## Pin Mapping
+
+### Transmitter v2.0
+
+| Function | GPIO |
+|---|--:|
+| Joystick Y | 33 |
+| Potentiometer | 32 |
+| Joystick X | 35 |
+| Encoder CLK | 27 |
+| Encoder DT | 14 |
+| Encoder SW | 13 |
+| Toggle 1 | 26 |
+| Toggle 2 | 25 |
+| Push 1 | 19 |
+| Push 2 | 15 |
+| OLED SDA | 21 |
+| OLED SCL | 22 |
+| Yellow LED | 23 |
+| Green LED | 18 |
+
+### Receiver v2.0-led (L298N + Dual Eye LED)
+
+| Function | GPIO |
+|---|--:|
+| Motor A ENA (PWM) | 25 |
+| Motor A IN1 | 26 |
+| Motor A IN2 | 27 |
+| Motor B ENB (PWM) | 14 |
+| Motor B IN3 | 12 |
+| Motor B IN4 | 13 |
+| Left Eye LED Data | 15 |
+| Right Eye LED Data | 16 |
+| Status LED (onboard) | 2 |
+| Battery ADC (optional) | 34 |
+
+---
 
 ## Repository Layout
 
@@ -54,11 +177,14 @@ The current receiver firmware (`firmware/receiver/direct-bts/v2.0`):
 │   │   └── esp-now-oled/
 │   │       ├── v1.0/
 │   │       ├── v1.1/
-│   │       └── v1.2/
+│   │       ├── v1.2/
+│   │       ├── v1.3/
+│   │       └── v2.0/          ← current transmitter
 │   └── receiver/
 │       ├── direct-bts/
 │       │   ├── v1.0/
 │       │   ├── v2.0/
+│       │   ├── v2.0-led/      ← current receiver (LED eye matrix)
 │       │   ├── v2.1/
 │       │   └── v3.0/
 │       ├── direct-bts-mpu6050/
@@ -73,150 +199,48 @@ The current receiver firmware (`firmware/receiver/direct-bts/v2.0`):
 │           └── v1.1.2/
 ├── bridges/
 │   └── arduino-bts/
-├── docs/                       # GitHub Pages website
-└── .github/workflows/          # GitHub Pages deployment workflow
+└── .github/workflows/
 ```
 
-## Main Firmware Notes
+---
 
-### Transmitter: `firmware/transmitter/esp-now-oled/v1.2`
+## Quick Start
 
-Key features implemented in code:
-
-- SSD1306 128x64 OLED interface with hash-based update optimization
-- Exponential Moving Average (EMA) ADC noise filtering and hysteresis deadzones
-- rotary encoder driven menu system
-- NVS persistence using `Preferences`
-- stored receiver target list with last-target recall
-- captive portal access point for adding new receiver MAC addresses
-- optional ESP-NOW receive callback for lightweight telemetry
-
-Default persisted settings loaded by the firmware:
-
-- `deadzone = 150`
-- `centerX = 2048`
-- `centerY = 2048`
-- `invertX = false`
-- `invertY = false`
-- `txRateHz = 50`
-- `rxEnabled = false`
-- `ledMode = LED_TX_RX`
-
-### Receiver: `firmware/receiver/direct-bts/v2.0`
-
-Current behavior:
-
-- boots in `WIFI_STA`
-- initializes ESP-NOW
-- prints its MAC address to serial
-- validates incoming packet size
-- logs joystick, potentiometer, and switch values
-- implements dual motor control logic (BTS7960/L298N compatible) based on joystick axes
-- sends a reply structure back to the sender
-
-## Pin Mapping
-
-The main transmitter pin configuration in `firmware/transmitter/esp-now-oled/v1.2/include/Config.h` is:
-
-| Function                   | Pin |
-| -------------------------- | --: |
-| Joystick Y (`PIN_JOY_VRY`) |  33 |
-| Potentiometer (`PIN_POT`)  |  32 |
-| Joystick X (`PIN_JOY_VRX`) |  35 |
-| Encoder CLK                |  27 |
-| Encoder DT                 |  14 |
-| Encoder Switch             |  13 |
-| Toggle 1                   |  26 |
-| Toggle 2                   |  25 |
-| Push 1                     |  19 |
-| Push 2                     |  15 |
-| OLED SDA                   |  21 |
-| OLED SCL                   |  22 |
-| Yellow LED                 |  23 |
-| Green LED                  |  18 |
-
-## Packet Format
-
-Transmitter payload:
-
-```cpp
-typedef struct struct_message
-{
-    uint16_t joyX;
-    uint16_t joyY;
-    uint16_t potValue;
-    bool toggle1;
-    bool toggle2;
-    bool push1;
-    bool push2;
-} struct_message;
-```
-
-Receiver reply packet:
-
-```cpp
-typedef struct struct_reply {
-  uint8_t sensorValue;
-  uint8_t counter;
-  uint8_t flags;
-} struct_reply;
-```
-
-## Building And Flashing
-
-This repo uses PlatformIO.1. Install prerequisites
-
-- VS Code with PlatformIO extension, or
-- PlatformIO Core CLI
-
-### 2. Open the desired firmware folder
-
-Each firmware variant is its own standalone PlatformIO project. Open one of these folders directly:
-
-- `firmware/transmitter/esp-now-oled/v1.2`
-- `firmware/receiver/direct-bts/v2.0` (or v2.1 / v3.0)
-
-### 3. Build
-
-Examples:
+### 1. Flash the receiver
 
 ```bash
-cd firmware/transmitter/esp-now-oled/v1.2
-pio run
+cd firmware/receiver/direct-bts/v2.0-led
+pio run --target upload
+pio device monitor        # note the printed MAC address
 ```
 
-```bash
-cd firmware/receiver/direct-bts/v2.0
-pio run
-```
-
-### 4. Upload
+### 2. Flash the transmitter
 
 ```bash
+cd firmware/transmitter/esp-now-oled/v2.0
 pio run --target upload
 ```
 
-### 5. Open serial monitor
+### 3. Pair
+
+1. On the transmitter OLED, navigate to **Settings → Add Tgt(AP)**
+2. Connect to Wi-Fi: SSID `ESP-NOW-REMOTE` / password `12345678`
+3. Open `http://192.168.4.1` and enter the receiver MAC + a name
+4. Save — the transmitter reboots and loads the new target automatically
+
+### 4. Control LED modes
+
+In the transmitter Settings menu, scroll to **Addr LED** (item 10) and turn the encoder to select a mode (0–9). The receiver updates instantly.
+
+---
+
+## Building Any Variant
+
+Each folder is an independent PlatformIO project:
 
 ```bash
-pio device monitor
+cd <firmware-folder>
+pio run                   # compile
+pio run --target upload   # compile + flash
+pio device monitor        # serial monitor @ 115200
 ```
-
-## Using The System
-
-### Receiver setup
-
-1. Flash `firmware/receiver/direct-bts/v2.0` to an ESP32.
-2. Open the serial monitor at `115200`.
-3. Note the printed receiver MAC address.
-
-### Transmitter setup
-
-1. Flash `firmware/transmitter/esp-now-oled/v1.2` to another ESP32.
-2. Enter the settings menu.
-3. Choose `Add Tgt(AP)` to start the captive portal.
-4. Connect to Wi-Fi SSID `ESP-NOW-REMOTE` with password `12345678`.
-5. Open `192.168.4.1`.
-6. Save a target name and the receiver MAC address.
-7. Reboot occurs automatically after save.
-8. Select the saved target from the target selection menu.

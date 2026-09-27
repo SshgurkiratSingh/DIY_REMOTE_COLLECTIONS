@@ -1,13 +1,33 @@
-# ESP-NOW Receiver v2.0-led
+# ESP-NOW Receiver v2.0-led — Eye Matrix Edition
 
-**L298N Motor Driver + Dual WS2812B Addressable LED Strips (10 LEDs each)**
+**L298N Motor Driver + Dual WS2812B LED Eye Matrix (10 LEDs each)**
 
-ESP32-based receiver that combines dual DC motor control via L298N with dual 10-LED WS2812B addressable LED strips featuring 12 animation modes and motor-LED sync, all controllable via the ESP-NOW v2.0 remote.
+ESP32-based receiver compatible with the **Transmitter v2.0** (`esp-now-oled/v2.0`). Combines dual DC motor control via L298N with a pair of 10-LED WS2812B strips shaped as expressive robot eyes. LED mode and brightness are controlled entirely from the remote — no button presses on the car needed.
+
+---
 
 ## Compatible Transmitter
 
-- `firmware/transmitter/esp-now-oled/v2.0` (ESP-NOW OLED Remote)
-- No transmitter firmware changes needed
+- `firmware/transmitter/esp-now-oled/v2.0`
+- No transmitter code changes needed — receiver reads `addrLedMode` from each incoming packet
+
+---
+
+## Eye Layout
+
+Each strip has 10 LEDs arranged in 3 physical lines:
+
+```
+Line 1  : LEDs  0,  1,  2
+[hidden]: LED   3         ← routing LED, always off in software
+Line 2  : LEDs  4,  5,  6
+[hidden]: LED   7         ← routing LED, always off in software
+Line 3  : LEDs  8,  9
+```
+
+> Hidden LEDs (index 3 and 7) carry wire routing but are always masked to black before each `FastLED.show()`.
+
+---
 
 ## Wiring
 
@@ -20,79 +40,114 @@ ESP32 DevKit → L298N Motor Driver
   GPIO 12 → IN3 (Motor B direction)
   GPIO 13 → IN4 (Motor B direction)
 
-ESP32 DevKit → WS2812B LED Strips (Left & Right)
-  GPIO 15 → Left Strip Data In
-  GPIO 16 → Right Strip Data In
-  5V       → VCC (use external 5V, not ESP32 3.3V)
-  GND      → GND (common ground with ESP32)
+ESP32 DevKit → WS2812B Left Eye
+  GPIO 15 → Data In
+  5V      → VCC  (use an external 5 V UBEC, not ESP32 3.3 V)
+  GND     → GND  (common ground with ESP32)
 
-ESP32 DevKit → Other
-  GPIO  2 → Onboard LED (status indicator)
-  GPIO 34 → Battery voltage divider (optional)
+ESP32 DevKit → WS2812B Right Eye
+  GPIO 16 → Data In
+  5V      → VCC
+  GND     → GND
+
+ESP32 DevKit → Misc
+  GPIO  2 → Onboard LED (signal status indicator)
+  GPIO 34 → Battery voltage divider (optional, ADC1)
 ```
 
-## Controls
+---
+
+## Remote Controls
 
 | Remote Input | Function |
 |---|---|
-| Joystick Y | Throttle (forward/backward) |
-| Joystick X | Steering (left/right) |
-| Potentiometer | LED brightness (twist to dim/brighten) |
-| Push Button 1 | Cycle LED mode forward |
-| Push Button 2 | Cycle LED mode backward |
+| Joystick Y | Throttle (forward / backward) |
+| Joystick X | Steering (left / right) |
+| Potentiometer | LED brightness (floor at 10, so strip never goes dark) |
 | Toggle Switch 1 | Motor-LED sync mode ON/OFF |
-| Toggle Switch 2 | Motor enable/disable (safety kill) |
+| Toggle Switch 2 | Motor enable / disable (safety kill switch) |
+| Settings → Addr LED (item 10) | Select LED mode 0–9 via encoder |
 
-## LED Modes (12)
+---
 
-| # | Mode | Description |
-|---|---|---|
-| 0 | Solid Color Cycle | All LEDs same color, rotating hue |
-| 1 | Rainbow Wave | Rainbow flowing across LEDs |
-| 2 | Breathing Pulse | Smooth sine-wave pulse |
-| 3 | Knight Rider | Red bounce with fade trail |
-| 4 | Strobe Flash | Fast white strobe |
-| 5 | Fire Flicker | Random warm flame effect |
-| 6 | Color Wipe | Fill one LED at a time |
-| 7 | Sparkle | Random twinkle |
-| 8 | Police Siren | Alternating red/blue flash |
-| 9 | Meteor Rain | Bright head with decay trail |
-| 10 | Theater Chase | Marquee chase in rainbow |
-| 11 | Static White | Steady white (utility) |
+## LED Modes (10)
 
-## Motor-LED Sync Mode
+| # | Name | Description |
+|---|------|-------------|
+| 0 | Solid Headlights | All visible LEDs white (static, redraws only on mode change) |
+| 1 | Angry Eyes | Top + middle lines solid red, bottom line off |
+| 2 | Scanning Pupil | Column sweeps left↔right (signed bounce, eye-accurate) |
+| 3 | Natural Blinking | White with a ~150 ms blink every 3 s |
+| 4 | Sleepy Breathing | Cyan sine-wave pulse on lower two lines only |
+| 5 | Rainbow Flow | Hue shifts across LEDs continuously |
+| 6 | Hypnotic Lines | Cycles top → middle → bottom with rotating colour |
+| 7 | Fire Flicker | Random warm-spectrum flicker per LED |
+| 8 | Police Strobe | Left eye red / right eye blue, alternating |
+| 9 | Cyber Sparkle | Random-hue digital sparkle with fade trail |
 
-When Toggle 1 is ON, LEDs react to motor state:
+---
 
-| Driving State | LED Behavior |
+## Motor-LED Sync Mode (Toggle 1 ON)
+
+When enabled, LEDs ignore the selected mode and instead reflect driving state:
+
+| Driving State | LED Behaviour |
 |---|---|
 | Idle | Gentle green breathing |
-| Forward | Green sweep back→front |
-| Reverse | Red sweep front→back |
-| Turning | Orange tint on turn side |
-| Full speed | Rapid rainbow pulse |
-| Braking | Red flash burst |
+| Forward | Green sparkle sweep (speed-scaled) |
+| Reverse | Red sparkle sweep (speed-scaled) |
+| Turning only | Orange blink on the turning side |
+| Full speed (>86%) | Rapid rainbow burst |
+| Braking | Red flash |
+
+---
 
 ## Signal Loss
 
-When the remote signal is lost (>1 second timeout):
+If no packet is received for **>1 second**:
 - Motors stop immediately
-- LEDs show slow red breathing pulse
-- Status LED turns off
+- Both eye strips show a slow red breathing pulse
+- Status LED (GPIO 2) turns off
 
-## Building
+---
+
+## Packet Format
+
+```cpp
+// Must match transmitter v2.0 Config.h exactly
+typedef struct __attribute__((packed)) struct_message {
+    uint16_t joyX;        // 0–4095, center ≈ 2048
+    uint16_t joyY;        // 0–4095, center ≈ 2048
+    uint16_t potValue;    // 0–4095 → mapped to LED brightness 10–255
+    bool     toggle1;     // motor-LED sync
+    bool     toggle2;     // motor enable (kill switch)
+    bool     push1;
+    bool     push2;
+    uint8_t  verifyKey;   // pairing key (0 = accept all)
+    uint8_t  addrLedMode; // LED mode 0–9
+} struct_message;  // 12 bytes
+```
+
+---
+
+## Building & Flashing
 
 ```bash
 cd firmware/receiver/direct-bts/v2.0-led
-pio run                    # Compile
-pio run --target upload    # Flash
-pio device monitor         # Serial monitor
+pio run                   # compile
+pio run --target upload   # compile + flash
+pio device monitor        # serial monitor @ 115200
 ```
+
+The serial output on boot prints the receiver MAC address and the `struct_message` size (must match transmitter).
+
+---
 
 ## Pairing
 
-1. Flash this firmware and note the MAC address from serial output
-2. On the transmitter, go to Settings → Add Target (AP)
-3. Connect to WiFi `ESP-NOW-REMOTE` / password `12345678`
-4. Enter the receiver's MAC address and save
-5. Select the target from the target menu
+1. Flash this firmware and note the MAC address printed to serial
+2. On the transmitter OLED: **Settings → Add Tgt(AP)**
+3. Connect to Wi-Fi `ESP-NOW-REMOTE` / password `12345678`
+4. Open `http://192.168.4.1`, enter the MAC address and a name, and save
+5. Select the new target from the Target Select menu
+6. The transmitter will automatically unicast to this receiver
