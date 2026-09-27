@@ -56,7 +56,7 @@ enum FeedbackMode
 };
 
 // --- Data Packet ---
-typedef struct struct_message
+typedef struct __attribute__((packed)) struct_message
 {
     uint16_t joyX;
     uint16_t joyY;
@@ -70,7 +70,7 @@ typedef struct struct_message
 } struct_message;
 
 // --- Received Data Packet ---
-typedef struct rx_message
+typedef struct __attribute__((packed)) rx_message
 {
     uint8_t data1;
     uint8_t data2;
