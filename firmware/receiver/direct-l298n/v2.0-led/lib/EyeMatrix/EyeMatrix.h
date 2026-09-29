@@ -37,12 +37,12 @@ private:
     void fadeBoth(uint8_t amount);
     
     // Mode functions
-    void modeXenonShimmer();
+    void modeReactorCore();
     void modeAngryEyes();
     void modeScanningPupil();
     void modeMeteorRain();
     void modeAuroraBorealis();
-    void modeRainbowFlow();
+    void modeSynthwave();
     void modeHypnoticLines();
     void modeFireFlicker();
     void modePoliceStrobe();

@@ -60,17 +60,17 @@ void EyeMatrix::update(int mode) {
     }
     
     switch (currentMode) {
-        case 0: modeXenonShimmer(); break;
+        case 0: modeReactorCore(); break;
         case 1: modeAngryEyes(); break;
         case 2: modeScanningPupil(); break;
         case 3: modeMeteorRain(); break;
         case 4: modeAuroraBorealis(); break;
-        case 5: modeRainbowFlow(); break;
+        case 5: modeSynthwave(); break;
         case 6: modeHypnoticLines(); break;
         case 7: modeFireFlicker(); break;
         case 8: modePoliceStrobe(); break;
         case 9: modeCyberSparkle(); break;
-        default: modeXenonShimmer(); break;
+        default: modeReactorCore(); break;
     }
     show();
 }
@@ -79,22 +79,29 @@ void EyeMatrix::update(int mode) {
 // Animation Implementations
 // ----------------------------------------------------------------------------
 
-void EyeMatrix::modeXenonShimmer() {
-    // Icy white/blue with a subtle high-frequency shimmer
+void EyeMatrix::modeReactorCore() {
+    fadeBoth(70); // Leave a short, aggressive trail
+    float t = millis() / 100.0;
+    
     for(int i = 0; i < NUM_LEDS; i++) {
-        uint8_t flicker = random(0, 40); // 0 to 40 brightness reduction
-        uint8_t r = 210 - flicker; 
-        uint8_t g = 240 - flicker;
-        uint8_t b = 255 - (flicker / 2);
-        stripLeft.setPixelColor(i, stripLeft.Color(r, g, b));
+        // Distance from the exact center (4.5)
+        float dist = abs(i - 4.5);
+        // Create outward moving energy pulses
+        float energy = sin(t - dist * 0.8); 
         
-        flicker = random(0, 40);
-        r = 210 - flicker; 
-        g = 240 - flicker;
-        b = 255 - (flicker / 2);
-        stripRight.setPixelColor(i, stripRight.Color(r, g, b));
+        if (energy > 0.6) {
+            float intensity = (energy - 0.6) / 0.4; // Scale 0.0 to 1.0
+            
+            uint8_t r = intensity * 100;      // Slight white hot core
+            uint8_t g = intensity * 255;      // High green/cyan
+            uint8_t b = 255;                  // Deep blue
+            
+            uint32_t c = stripLeft.Color(r, g, b);
+            stripLeft.setPixelColor(i, c);
+            stripRight.setPixelColor(i, c);
+        }
     }
-    delay(20); // Shimmer speed
+    delay(15);
 }
 
 void EyeMatrix::modeAngryEyes() {
@@ -162,13 +169,25 @@ void EyeMatrix::modeAuroraBorealis() {
     delay(20);
 }
 
-void EyeMatrix::modeRainbowFlow() {
-    uint16_t baseHue = millis() * 20; 
+void EyeMatrix::modeSynthwave() {
+    unsigned long t = millis();
     for (int i = 0; i < NUM_LEDS; i++) {
-        uint32_t c = stripLeft.gamma32(stripLeft.ColorHSV(baseHue + (i * 6553), 255, 255));
+        // Map sine wave to create a flowing gradient
+        float wave = (sin((t / 300.0) - (i * 0.4)) + 1.0) / 2.0; // 0.0 to 1.0
+        
+        // Hue mapping: Orange/Yellow (10000) -> Magenta/Pink (55000) -> Cyan (35000)
+        uint16_t hue;
+        if (wave < 0.5) {
+            hue = map(wave * 1000, 0, 500, 10000, 55000); 
+        } else {
+            hue = map((wave - 0.5) * 1000, 0, 500, 55000, 35000);
+        }
+        
+        uint32_t c = stripLeft.gamma32(stripLeft.ColorHSV(hue, 255, 255));
         stripLeft.setPixelColor(i, c);
         stripRight.setPixelColor(i, c);
     }
+    delay(10);
 }
 
 void EyeMatrix::modeHypnoticLines() {
