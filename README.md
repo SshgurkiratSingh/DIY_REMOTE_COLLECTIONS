@@ -16,11 +16,16 @@ An ESP32-based RC remote control collection centred around an ESP-NOW handheld t
 | v1.1 | `firmware/transmitter/esp-now-oled/v1.1` | Older OLED iteration |
 | v1.0 | `firmware/transmitter/esp-now-oled/v1.0` | Initial OLED transmitter |
 
-### Receivers — `direct-bts` (ESP-NOW, BTS7960 / L298N)
+### Receivers — `direct-l298n` (ESP-NOW, L298N)
 
 | Version | Path | Notes |
 |---------|------|-------|
-| **v2.0-led** ⭐ | `firmware/receiver/direct-bts/v2.0-led` | **Current production receiver.** L298N motor driver + dual WS2812B eye-matrix LED strips (10 LEDs each, 3-3-2 layout). 10 custom eye animations. Full v2.0 transmitter payload. |
+| **v2.0-led** ⭐ | `firmware/receiver/direct-l298n/v2.0-led` | **Current production receiver.** L298N motor driver + dual WS2812B eye-matrix LED strips (10 LEDs each, 3-3-2 layout). 10 custom eye animations. Full v2.0 transmitter payload. |
+
+### Receivers — `direct-bts` (ESP-NOW, BTS7960)
+
+| Version | Path | Notes |
+|---------|------|-------|
 | v3.0 | `firmware/receiver/direct-bts/v3.0` | Extended receiver with pairing code (`verifyKey`) |
 | v2.1 | `firmware/receiver/direct-bts/v2.1` | Dual motor, reply support |
 | v2.0 | `firmware/receiver/direct-bts/v2.0` | Base dual-motor receiver |
@@ -54,7 +59,7 @@ An ESP32-based RC remote control collection centred around an ESP-NOW handheld t
 
 ## Packet Format (v2.0 Protocol)
 
-All receivers under `direct-bts` (v2.0, v2.1, v3.0, v2.0-led) and `direct-bts-mpu6050` now use the same packed payload:
+All receivers under `direct-bts` (v2.0, v2.1, v3.0), `direct-l298n` (v2.0-led), and `direct-bts-mpu6050` now use the same packed payload:
 
 ### Transmitter → Receiver
 
@@ -181,10 +186,11 @@ typedef struct __attribute__((packed)) rx_message {
 │   │       ├── v1.3/
 │   │       └── v2.0/          ← current transmitter
 │   └── receiver/
+│       ├── direct-l298n/
+│       │   └── v2.0-led/      ← current receiver (LED eye matrix)
 │       ├── direct-bts/
 │       │   ├── v1.0/
 │       │   ├── v2.0/
-│       │   ├── v2.0-led/      ← current receiver (LED eye matrix)
 │       │   ├── v2.1/
 │       │   └── v3.0/
 │       ├── direct-bts-mpu6050/
@@ -209,7 +215,7 @@ typedef struct __attribute__((packed)) rx_message {
 ### 1. Flash the receiver
 
 ```bash
-cd firmware/receiver/direct-bts/v2.0-led
+cd firmware/receiver/direct-l298n/v2.0-led
 pio run --target upload
 pio device monitor        # note the printed MAC address
 ```
