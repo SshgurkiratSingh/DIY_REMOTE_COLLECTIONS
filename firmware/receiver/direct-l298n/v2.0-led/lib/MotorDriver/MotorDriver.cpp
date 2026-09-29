@@ -69,7 +69,7 @@ int MotorDriver::rampTowards(int current, int target, int step) {
     return current;
 }
 
-void MotorDriver::mixDrive(uint16_t throttleRaw, uint16_t steerRaw, uint16_t potRaw) {
+void MotorDriver::mixDrive(uint16_t throttleRaw, uint16_t steerRaw, uint16_t potRaw, bool boost) {
     int tRaw = (int)throttleRaw;
     int sRaw = (int)steerRaw;
     
@@ -80,8 +80,8 @@ void MotorDriver::mixDrive(uint16_t throttleRaw, uint16_t steerRaw, uint16_t pot
     targetFwd  = map(tRaw, 0, JOY_MAX, -255, 255);
     targetTurn = map(sRaw, 0, JOY_MAX, -255, 255);
 
-    // Apply potentiometer as a global speed limiter (0 - 255)
-    int maxSpeed = map(potRaw, 0, 4095, 0, 255);
+    // Apply potentiometer as a global speed limiter (0 - 255), bypass if boost is true
+    int maxSpeed = boost ? 255 : map(potRaw, 0, 4095, 0, 255);
     
     targetFwd = (targetFwd * maxSpeed) / 255;
     targetTurn = (targetTurn * maxSpeed) / 255;

@@ -18,13 +18,6 @@ void EyeMatrix::begin() {
     show();
 }
 
-void EyeMatrix::maskHiddenLEDs() {
-    stripLeft.setPixelColor(3, 0);
-    stripRight.setPixelColor(3, 0);
-    stripLeft.setPixelColor(7, 0);
-    stripRight.setPixelColor(7, 0);
-}
-
 void EyeMatrix::fillBoth(uint32_t color) {
     for (int i = 0; i < NUM_LEDS; i++) {
         stripLeft.setPixelColor(i, color);
@@ -55,7 +48,6 @@ void EyeMatrix::fadeBoth(uint8_t amount) {
 }
 
 void EyeMatrix::show() {
-    maskHiddenLEDs();
     stripLeft.show();
     stripRight.show();
 }
@@ -98,11 +90,7 @@ void EyeMatrix::modeAngryEyes() {
     if (state.step == 0) {
         fillBoth(0);
         uint32_t red = stripLeft.Color(255, 0, 0);
-        for (int i = 0; i < 3; i++) {
-            stripLeft.setPixelColor(i, red);
-            stripRight.setPixelColor(i, red);
-        }
-        for (int i = 4; i < 7; i++) {
+        for (int i = 0; i < 5; i++) {
             stripLeft.setPixelColor(i, red);
             stripRight.setPixelColor(i, red);
         }
@@ -111,27 +99,16 @@ void EyeMatrix::modeAngryEyes() {
 }
 
 void EyeMatrix::modeScanningPupil() {
-    fadeBoth(30); // Fade effect to leave a trail
+    fadeBoth(50); // Fade effect to leave a trail
     
     unsigned long t = millis();
-    int pos = (t / 150) % 6; 
-    if (pos > 2) pos = 5 - pos; // Map to 0, 1, 2, 1, 0...
-    
-    int col = pos;
-    int led1 = col;
-    int led2 = 4 + col;
-    int led3 = (col == 1) ? 8 : (col == 2 ? 9 : -1);
+    int pos = (t / 80) % 18; 
+    if (pos > 9) pos = 18 - pos; // Map to 0..9..1..0
     
     uint32_t red = stripLeft.Color(255, 0, 0);
-    stripLeft.setPixelColor(led1, red);
-    stripRight.setPixelColor(led1, red);
-    stripLeft.setPixelColor(led2, red);
-    stripRight.setPixelColor(led2, red);
-    if (led3 >= 0) {
-        stripLeft.setPixelColor(led3, red);
-        stripRight.setPixelColor(led3, red);
-    }
-    delay(10); // Help stabilize the effect speed
+    stripLeft.setPixelColor(pos, red);
+    stripRight.setPixelColor(pos, red);
+    delay(10);
 }
 
 void EyeMatrix::modeNaturalBlinking() {
@@ -150,8 +127,10 @@ void EyeMatrix::modeSleepyBreathing() {
     fillBoth(0);
     uint32_t c = stripLeft.gamma32(stripLeft.ColorHSV(40000, 255, v)); 
     
-    for (int i = 4; i < 7;  i++) { stripLeft.setPixelColor(i, c); stripRight.setPixelColor(i, c); }
-    for (int i = 8; i < 10; i++) { stripLeft.setPixelColor(i, c); stripRight.setPixelColor(i, c); }
+    for (int i = 0; i < NUM_LEDS; i++) {
+        stripLeft.setPixelColor(i, c);
+        stripRight.setPixelColor(i, c);
+    }
 }
 
 void EyeMatrix::modeRainbowFlow() {
@@ -164,18 +143,17 @@ void EyeMatrix::modeRainbowFlow() {
 }
 
 void EyeMatrix::modeHypnoticLines() {
-    fadeBoth(30);
+    fadeBoth(40);
     
     unsigned long t = millis();
     int phase = (t / 150) % 3;
     uint32_t c = stripLeft.gamma32(stripLeft.ColorHSV((t * 15) % 65536, 255, 255));
     
-    if (phase == 0) {
-        for (int i = 0; i < 3; i++) { stripLeft.setPixelColor(i, c); stripRight.setPixelColor(i, c); }
-    } else if (phase == 1) {
-        for (int i = 4; i < 7; i++) { stripLeft.setPixelColor(i, c); stripRight.setPixelColor(i, c); }
-    } else {
-        for (int i = 8; i < 10; i++) { stripLeft.setPixelColor(i, c); stripRight.setPixelColor(i, c); }
+    for (int i = 0; i < NUM_LEDS; i++) {
+        if (i % 3 == phase) {
+            stripLeft.setPixelColor(i, c);
+            stripRight.setPixelColor(i, c);
+        }
     }
     delay(10);
 }

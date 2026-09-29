@@ -70,24 +70,44 @@ void loop() {
     
     const struct_message& data = network.getData();
 
-    // 2. Motor Update (Speed mapped by potValue)
+    // Static states for edge detection and local overrides
+    static bool lastPush1 = false;
+    static int localLedMode = 0;
+
+    bool currentPush1 = data.push1;
+    bool motorBoost = false;
+
     if (data.toggle2) {
-        motors.mixDrive(data.joyY, data.joyX, data.potValue);
-        motors.update(); // handles smooth ramping internally (at 50Hz)
+        // Toggle 2 = 1 (LED mode bypass)
+        if (currentPush1 && !lastPush1) {
+            localLedMode = (localLedMode + 1) % TOTAL_LED_MODES;
+        }
     } else {
-        motors.stop();
+        // Toggle 2 = 0 (Ramp motor / Boost)
+        if (currentPush1) {
+            motorBoost = true;
+        }
+        localLedMode = data.addrLedMode;
     }
+    
+    lastPush1 = currentPush1;
+    
+    int activeLedMode = (data.toggle2) ? localLedMode : data.addrLedMode;
+
+    // 2. Motor Update (Speed mapped by potValue, push1 boosts)
+    motors.mixDrive(data.joyY, data.joyX, data.potValue, motorBoost);
+    motors.update(); // handles smooth ramping internally (at 50Hz)
     
     // 3. LED Animation Update
     if (network.hasNewLedMode()) {
-        Serial.printf("LED Mode -> %d\n", data.addrLedMode);
+        Serial.printf("Remote LED Mode -> %d\n", data.addrLedMode);
     }
     
     // The EyeMatrix handles the internal high framerate updates seamlessly
-    eyes.update(data.addrLedMode);
+    eyes.update(activeLedMode);
     
     // 4. Telemetry Feedback Update
-    network.update(data.addrLedMode, data.toggle1);
+    network.update(activeLedMode, data.toggle1);
     
     // Let the loop run as fast as possible for buttery smooth FastLED animations.
     // yield() helps prevent watchdog resets.

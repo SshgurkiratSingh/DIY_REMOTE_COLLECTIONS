@@ -9,7 +9,7 @@ public:
     void begin();
     
     // Process raw joystick values, apply deadzone, and calculate target speeds using pot as a speed limit
-    void mixDrive(uint16_t throttleRaw, uint16_t steerRaw, uint16_t potRaw);
+    void mixDrive(uint16_t throttleRaw, uint16_t steerRaw, uint16_t potRaw, bool boost);
     
     // Emergency stop (bypasses ramping)
     void stop();

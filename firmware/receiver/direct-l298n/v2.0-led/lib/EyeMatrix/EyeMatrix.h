@@ -35,7 +35,6 @@ private:
     void show();
     void fillBoth(uint32_t color);
     void fadeBoth(uint8_t amount);
-    void maskHiddenLEDs();
     
     // Mode functions
     void modeSolidHeadlights();
