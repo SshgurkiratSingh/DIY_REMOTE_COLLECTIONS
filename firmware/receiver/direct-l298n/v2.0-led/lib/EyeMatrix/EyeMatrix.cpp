@@ -60,17 +60,17 @@ void EyeMatrix::update(int mode) {
     }
     
     switch (currentMode) {
-        case 0: modeSolidHeadlights(); break;
+        case 0: modeXenonShimmer(); break;
         case 1: modeAngryEyes(); break;
         case 2: modeScanningPupil(); break;
-        case 3: modeNaturalBlinking(); break;
-        case 4: modeSleepyBreathing(); break;
+        case 3: modeMeteorRain(); break;
+        case 4: modeAuroraBorealis(); break;
         case 5: modeRainbowFlow(); break;
         case 6: modeHypnoticLines(); break;
         case 7: modeFireFlicker(); break;
         case 8: modePoliceStrobe(); break;
         case 9: modeCyberSparkle(); break;
-        default: modeSolidHeadlights(); break;
+        default: modeXenonShimmer(); break;
     }
     show();
 }
@@ -79,11 +79,22 @@ void EyeMatrix::update(int mode) {
 // Animation Implementations
 // ----------------------------------------------------------------------------
 
-void EyeMatrix::modeSolidHeadlights() {
-    if (state.step == 0) {
-        fillBoth(stripLeft.Color(255, 255, 255));
-        state.step = 1;
+void EyeMatrix::modeXenonShimmer() {
+    // Icy white/blue with a subtle high-frequency shimmer
+    for(int i = 0; i < NUM_LEDS; i++) {
+        uint8_t flicker = random(0, 40); // 0 to 40 brightness reduction
+        uint8_t r = 210 - flicker; 
+        uint8_t g = 240 - flicker;
+        uint8_t b = 255 - (flicker / 2);
+        stripLeft.setPixelColor(i, stripLeft.Color(r, g, b));
+        
+        flicker = random(0, 40);
+        r = 210 - flicker; 
+        g = 240 - flicker;
+        b = 255 - (flicker / 2);
+        stripRight.setPixelColor(i, stripRight.Color(r, g, b));
     }
+    delay(20); // Shimmer speed
 }
 
 void EyeMatrix::modeAngryEyes() {
@@ -111,26 +122,44 @@ void EyeMatrix::modeScanningPupil() {
     delay(10);
 }
 
-void EyeMatrix::modeNaturalBlinking() {
-    unsigned long t = millis() % 4000; // Blink every 4 seconds
-    if (t < 200) {
-        fillBoth(0);
-    } else {
-        fillBoth(stripLeft.Color(255, 255, 255));
+void EyeMatrix::modeMeteorRain() {
+    fadeBoth(60); // Fast fade for meteor tail
+    
+    unsigned long t = millis();
+    int meteorSpeed = 60;
+    int pos = (t / meteorSpeed) % (NUM_LEDS + 5); // Allow it to go off screen to create a pause
+    
+    if (pos < NUM_LEDS) {
+        uint32_t meteorColor = stripLeft.Color(255, 255, 255); // White hot head
+        stripLeft.setPixelColor(pos, meteorColor);
+        // Mirrored effect on right eye (shoots in opposite direction)
+        stripRight.setPixelColor(NUM_LEDS - 1 - pos, meteorColor);
     }
+    delay(15);
 }
 
-void EyeMatrix::modeSleepyBreathing() {
-    float val = (sin(millis() / 500.0) + 1.0) / 2.0; // 0.0 to 1.0
-    uint8_t v = val * 255;
-    
-    fillBoth(0);
-    uint32_t c = stripLeft.gamma32(stripLeft.ColorHSV(40000, 255, v)); 
-    
+void EyeMatrix::modeAuroraBorealis() {
+    // Smoothly flowing greens, cyans, and blues using overlapping sine waves
+    unsigned long t = millis();
     for (int i = 0; i < NUM_LEDS; i++) {
+        // Wave 1: Slow, wide, Green/Blue
+        float wave1 = sin(t / 800.0 + i * 0.3) * 0.5 + 0.5;
+        // Wave 2: Faster, tighter, Purple/Blue
+        float wave2 = sin(t / 400.0 - i * 0.4) * 0.5 + 0.5;
+        
+        uint8_t r = wave2 * 80;               // Little bit of purple
+        uint8_t g = wave1 * 255;              // Dominant green
+        uint8_t b = (wave1 + wave2) * 127;    // High blue
+        
+        r = min(r, (uint8_t)255);
+        g = min(g, (uint8_t)255);
+        b = min(b, (uint8_t)255);
+        
+        uint32_t c = stripLeft.Color(r, g, b);
         stripLeft.setPixelColor(i, c);
-        stripRight.setPixelColor(i, c);
+        stripRight.setPixelColor(NUM_LEDS - 1 - i, c); // Mirror the aurora
     }
+    delay(20);
 }
 
 void EyeMatrix::modeRainbowFlow() {
