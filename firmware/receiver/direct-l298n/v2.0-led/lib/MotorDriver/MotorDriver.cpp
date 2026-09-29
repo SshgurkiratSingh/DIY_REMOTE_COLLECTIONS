@@ -91,13 +91,9 @@ void MotorDriver::mixDrive(uint16_t throttleRaw, uint16_t steerRaw, uint16_t pot
 }
 
 void MotorDriver::update() {
-    unsigned long now = millis();
-    // Update at ~50Hz (every 20ms) for smooth ramping
-    if (now - lastUpdateMs >= 20) {
-        lastUpdateMs = now;
-        currentSpeedA = rampTowards(currentSpeedA, targetSpeedA, RAMP_STEP);
-        currentSpeedB = rampTowards(currentSpeedB, targetSpeedB, RAMP_STEP);
-        setMotorA(currentSpeedA);
-        setMotorB(currentSpeedB);
-    }
+    // Directly map targets without smoothing
+    currentSpeedA = targetSpeedA;
+    currentSpeedB = targetSpeedB;
+    setMotorA(currentSpeedA);
+    setMotorB(currentSpeedB);
 }
