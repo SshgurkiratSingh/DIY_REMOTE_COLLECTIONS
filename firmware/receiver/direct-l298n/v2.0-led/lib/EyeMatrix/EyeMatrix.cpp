@@ -38,34 +38,25 @@ void EyeMatrix::show() {
     FastLED.show();
 }
 
-void EyeMatrix::update(int mode, bool motorSync, int motorFwd, int motorTurn) {
-    if (motorSync) {
-        if (currentMode != -2) { // -2 means sync mode
-            currentMode = -2;
-            state.reset();
-            fillBoth(CRGB::Black);
-        }
-        modeMotorSync(motorFwd, motorTurn);
-    } else {
-        if (mode != currentMode) {
-            currentMode = mode;
-            state.reset();
-            fillBoth(CRGB::Black);
-        }
-        
-        switch (currentMode) {
-            case 0: modeSolidHeadlights(); break;
-            case 1: modeAngryEyes(); break;
-            case 2: modeScanningPupil(); break;
-            case 3: modeNaturalBlinking(); break;
-            case 4: modeSleepyBreathing(); break;
-            case 5: modeRainbowFlow(); break;
-            case 6: modeHypnoticLines(); break;
-            case 7: modeFireFlicker(); break;
-            case 8: modePoliceStrobe(); break;
-            case 9: modeCyberSparkle(); break;
-            default: modeSolidHeadlights(); break;
-        }
+void EyeMatrix::update(int mode) {
+    if (mode != currentMode) {
+        currentMode = mode;
+        state.reset();
+        fillBoth(CRGB::Black);
+    }
+    
+    switch (currentMode) {
+        case 0: modeSolidHeadlights(); break;
+        case 1: modeAngryEyes(); break;
+        case 2: modeScanningPupil(); break;
+        case 3: modeNaturalBlinking(); break;
+        case 4: modeSleepyBreathing(); break;
+        case 5: modeRainbowFlow(); break;
+        case 6: modeHypnoticLines(); break;
+        case 7: modeFireFlicker(); break;
+        case 8: modePoliceStrobe(); break;
+        case 9: modeCyberSparkle(); break;
+        default: modeSolidHeadlights(); break;
     }
     show();
 }
@@ -200,59 +191,6 @@ void EyeMatrix::modeCyberSparkle() {
     }
     if (random8() < 120) {
         ledsRight[random8(NUM_LEDS)] = CHSV(random8(), 200, 255);
-    }
-}
-
-// ----------------------------------------------------------------------------
-// Motor-LED Sync Mode Logic
-// ----------------------------------------------------------------------------
-
-void EyeMatrix::modeMotorSync(int fwd, int turn) {
-    int absFwd = abs(fwd);
-    int absTurn = abs(turn);
-    int speed = max(absFwd, absTurn);
-    
-    // Braking detection logic can be more complex, but here we use a simplified version
-    // Assume braking if we are suddenly moving slow but were fast (requires passing prev state, or infer from fwd)
-    // For now, let's use the explicit target speeds for effects.
-
-    if (speed > 220) {
-        // Full speed: rapid rainbow burst
-        uint8_t baseHue = millis() / 5;
-        for (int i = 0; i < NUM_LEDS; i++) {
-            ledsLeft[i] = ledsRight[i] = CHSV(baseHue + (i * 25), 255, 255);
-        }
-    } else if (absFwd > 30) {
-        // Driving
-        fadeBoth(100);
-        CRGB driveColor = (fwd > 0) ? CRGB::Green : CRGB::Red;
-        
-        // Speed determines how many LEDs light up
-        int numSparks = map(absFwd, 30, 255, 1, 3);
-        for(int s=0; s<numSparks; s++) {
-            ledsLeft[random8(NUM_LEDS)] = driveColor;
-            ledsRight[random8(NUM_LEDS)] = driveColor;
-        }
-        
-        // Turn indicator override
-        if (absTurn > 30) {
-            if (turn > 0) fill_solid(ledsRight, NUM_LEDS, CRGB::Orange);
-            else          fill_solid(ledsLeft,  NUM_LEDS, CRGB::Orange);
-        }
-    } else if (absTurn > 30) {
-        // Turning in place
-        fillBoth(CRGB::Black);
-        uint8_t blink = beat8(120); // 120 BPM blink
-        if (blink < 128) {
-            uint8_t bright = map(absTurn, 30, 255, 100, 255);
-            CRGB turnColor = CHSV(25, 255, bright); // Orange
-            if (turn > 0) fill_solid(ledsRight, NUM_LEDS, turnColor);
-            else          fill_solid(ledsLeft,  NUM_LEDS, turnColor);
-        }
-    } else {
-        // Idle
-        uint8_t val = beatsin8(15, 30, 150); // Gentle breathing
-        fillBoth(CHSV(96, 255, val)); // Greenish breathing
     }
 }
 

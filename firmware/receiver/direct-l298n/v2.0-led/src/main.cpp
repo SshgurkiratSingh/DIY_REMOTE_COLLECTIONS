@@ -70,27 +70,23 @@ void loop() {
     
     const struct_message& data = network.getData();
 
-    // 2. Brightness Update
-    uint8_t brightness = (uint8_t)max((int)MIN_BRIGHTNESS, (int)map(data.potValue, 0, 4095, 0, 255));
-    eyes.setBrightness(brightness);
-    
-    // 3. Motor Update
+    // 2. Motor Update (Speed mapped by potValue)
     if (data.toggle2) {
-        motors.mixDrive(data.joyY, data.joyX);
+        motors.mixDrive(data.joyY, data.joyX, data.potValue);
         motors.update(); // handles smooth ramping internally (at 50Hz)
     } else {
         motors.stop();
     }
     
-    // 4. LED Animation Update
+    // 3. LED Animation Update
     if (network.hasNewLedMode()) {
         Serial.printf("LED Mode -> %d\n", data.addrLedMode);
     }
     
     // The EyeMatrix handles the internal high framerate updates seamlessly
-    eyes.update(data.addrLedMode, data.toggle1, motors.getTargetFwd(), motors.getTargetTurn());
+    eyes.update(data.addrLedMode);
     
-    // 5. Telemetry Feedback Update
+    // 4. Telemetry Feedback Update
     network.update(data.addrLedMode, data.toggle1);
     
     // Let the loop run as fast as possible for buttery smooth FastLED animations.

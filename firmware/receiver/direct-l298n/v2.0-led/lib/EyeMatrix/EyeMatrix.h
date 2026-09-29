@@ -27,7 +27,7 @@ public:
     void begin();
     
     // Call in the main loop to drive the currently selected mode
-    void update(int mode, bool motorSync, int motorFwd, int motorTurn);
+    void update(int mode);
     
     // Set the overall brightness
     void setBrightness(uint8_t b);
@@ -54,9 +54,6 @@ private:
     void modePoliceStrobe();
     void modeCyberSparkle();
     
-    // Motor sync logic
-    void modeMotorSync(int fwd, int turn);
-
     CRGB ledsLeft[NUM_LEDS];
     CRGB ledsRight[NUM_LEDS];
     
