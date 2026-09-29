@@ -1,48 +1,70 @@
 #include "EyeMatrix.h"
 
-EyeMatrix::EyeMatrix() : currentMode(-1) {
+EyeMatrix::EyeMatrix() : 
+    currentMode(-1),
+    stripLeft(NUM_LEDS, LED_PIN_LEFT, NEO_GRB + NEO_KHZ800),
+    stripRight(NUM_LEDS, LED_PIN_RIGHT, NEO_GRB + NEO_KHZ800) {
     state.reset();
 }
 
 void EyeMatrix::begin() {
-    FastLED.addLeds<LED_TYPE, LED_PIN_LEFT, COLOR_ORDER>(ledsLeft, NUM_LEDS).setCorrection(TypicalLEDStrip);
-    FastLED.addLeds<LED_TYPE, LED_PIN_RIGHT, COLOR_ORDER>(ledsRight, NUM_LEDS).setCorrection(TypicalLEDStrip);
-    FastLED.setBrightness(DEFAULT_BRIGHTNESS);
-    fillBoth(CRGB::Black);
+    stripLeft.begin();
+    stripRight.begin();
+    
+    stripLeft.setBrightness(DEFAULT_BRIGHTNESS);
+    stripRight.setBrightness(DEFAULT_BRIGHTNESS);
+    
+    fillBoth(0); // Black
     show();
 }
 
-void EyeMatrix::setBrightness(uint8_t b) {
-    FastLED.setBrightness(b);
-}
-
 void EyeMatrix::maskHiddenLEDs() {
-    ledsLeft[3] = ledsRight[3] = CRGB::Black;
-    ledsLeft[7] = ledsRight[7] = CRGB::Black;
+    stripLeft.setPixelColor(3, 0);
+    stripRight.setPixelColor(3, 0);
+    stripLeft.setPixelColor(7, 0);
+    stripRight.setPixelColor(7, 0);
 }
 
-void EyeMatrix::fillBoth(CRGB color) {
-    fill_solid(ledsLeft, NUM_LEDS, color);
-    fill_solid(ledsRight, NUM_LEDS, color);
+void EyeMatrix::fillBoth(uint32_t color) {
+    for (int i = 0; i < NUM_LEDS; i++) {
+        stripLeft.setPixelColor(i, color);
+        stripRight.setPixelColor(i, color);
+    }
 }
 
 void EyeMatrix::fadeBoth(uint8_t amount) {
     for (int i = 0; i < NUM_LEDS; i++) {
-        ledsLeft[i].fadeToBlackBy(amount);
-        ledsRight[i].fadeToBlackBy(amount);
+        uint32_t cL = stripLeft.getPixelColor(i);
+        uint8_t rL = (uint8_t)(cL >> 16);
+        uint8_t gL = (uint8_t)(cL >>  8);
+        uint8_t bL = (uint8_t)cL;
+        rL = (rL * (255 - amount)) >> 8;
+        gL = (gL * (255 - amount)) >> 8;
+        bL = (bL * (255 - amount)) >> 8;
+        stripLeft.setPixelColor(i, stripLeft.Color(rL, gL, bL));
+        
+        uint32_t cR = stripRight.getPixelColor(i);
+        uint8_t rR = (uint8_t)(cR >> 16);
+        uint8_t gR = (uint8_t)(cR >>  8);
+        uint8_t bR = (uint8_t)cR;
+        rR = (rR * (255 - amount)) >> 8;
+        gR = (gR * (255 - amount)) >> 8;
+        bR = (bR * (255 - amount)) >> 8;
+        stripRight.setPixelColor(i, stripRight.Color(rR, gR, bR));
     }
 }
 
 void EyeMatrix::show() {
     maskHiddenLEDs();
-    FastLED.show();
+    stripLeft.show();
+    stripRight.show();
 }
 
 void EyeMatrix::update(int mode) {
     if (mode != currentMode) {
         currentMode = mode;
         state.reset();
-        fillBoth(CRGB::Black);
+        fillBoth(0);
     }
     
     switch (currentMode) {
@@ -62,136 +84,147 @@ void EyeMatrix::update(int mode) {
 }
 
 // ----------------------------------------------------------------------------
-// Animation Implementations (Using FastLED math functions)
+// Animation Implementations
 // ----------------------------------------------------------------------------
 
 void EyeMatrix::modeSolidHeadlights() {
-    // Solid white, drawn once. 
     if (state.step == 0) {
-        fillBoth(CRGB::White);
+        fillBoth(stripLeft.Color(255, 255, 255));
         state.step = 1;
     }
 }
 
 void EyeMatrix::modeAngryEyes() {
     if (state.step == 0) {
-        fillBoth(CRGB::Black);
-        // Sharp angled brow in deep red
+        fillBoth(0);
+        uint32_t red = stripLeft.Color(255, 0, 0);
         for (int i = 0; i < 3; i++) {
-            ledsLeft[i] = ledsRight[i] = CRGB::Red;
+            stripLeft.setPixelColor(i, red);
+            stripRight.setPixelColor(i, red);
         }
         for (int i = 4; i < 7; i++) {
-            ledsLeft[i] = ledsRight[i] = CRGB::Red;
+            stripLeft.setPixelColor(i, red);
+            stripRight.setPixelColor(i, red);
         }
         state.step = 1;
     }
 }
 
 void EyeMatrix::modeScanningPupil() {
-    // Use FastLED's triwave8 for a smooth bouncing coordinate (0 to 255)
-    uint8_t pos = triwave8(millis() / 4); // Adjust divisor for speed
+    fadeBoth(30); // Fade effect to leave a trail
     
-    // Map 0-255 to 3 columns (0, 1, 2)
-    uint8_t col = scale8(pos, 3);
+    unsigned long t = millis();
+    int pos = (t / 150) % 6; 
+    if (pos > 2) pos = 5 - pos; // Map to 0, 1, 2, 1, 0...
     
-    fadeBoth(100);
-    
-    int led1 = col;            // Line 1: idx 0,1,2
-    int led2 = 4 + col;        // Line 2: idx 4,5,6
+    int col = pos;
+    int led1 = col;
+    int led2 = 4 + col;
     int led3 = (col == 1) ? 8 : (col == 2 ? 9 : -1);
     
-    ledsLeft[led1] = ledsRight[led1] = CRGB::Red;
-    ledsLeft[led2] = ledsRight[led2] = CRGB::Red;
-    if (led3 >= 0) ledsLeft[led3] = ledsRight[led3] = CRGB::Red;
+    uint32_t red = stripLeft.Color(255, 0, 0);
+    stripLeft.setPixelColor(led1, red);
+    stripRight.setPixelColor(led1, red);
+    stripLeft.setPixelColor(led2, red);
+    stripRight.setPixelColor(led2, red);
+    if (led3 >= 0) {
+        stripLeft.setPixelColor(led3, red);
+        stripRight.setPixelColor(led3, red);
+    }
+    delay(10); // Help stabilize the effect speed
 }
 
 void EyeMatrix::modeNaturalBlinking() {
-    uint32_t t = millis();
-    // Use a slow beat to trigger the blink
-    uint8_t beat = beat8(20); // 20 BPM
-    
-    // If the beat wraps around (0-20 region), close the eye
-    if (beat < 20) {
-        fillBoth(CRGB::Black);
+    unsigned long t = millis() % 4000; // Blink every 4 seconds
+    if (t < 200) {
+        fillBoth(0);
     } else {
-        fillBoth(CRGB::White);
+        fillBoth(stripLeft.Color(255, 255, 255));
     }
 }
 
 void EyeMatrix::modeSleepyBreathing() {
-    // Smooth sine-wave pulse on lower two lines only
-    uint8_t val = beatsin8(15, 30, 255); // 15 BPM, range 30-255
+    float val = (sin(millis() / 500.0) + 1.0) / 2.0; // 0.0 to 1.0
+    uint8_t v = val * 255;
     
-    fillBoth(CRGB::Black);
-    for (int i = 4; i < 7;  i++) ledsLeft[i] = ledsRight[i] = CHSV(160, 255, val);
-    for (int i = 8; i < 10; i++) ledsLeft[i] = ledsRight[i] = CHSV(160, 255, val);
+    fillBoth(0);
+    uint32_t c = stripLeft.gamma32(stripLeft.ColorHSV(40000, 255, v)); 
+    
+    for (int i = 4; i < 7;  i++) { stripLeft.setPixelColor(i, c); stripRight.setPixelColor(i, c); }
+    for (int i = 8; i < 10; i++) { stripLeft.setPixelColor(i, c); stripRight.setPixelColor(i, c); }
 }
 
 void EyeMatrix::modeRainbowFlow() {
-    // Continuous flowing color palette
-    uint8_t baseHue = millis() / 10; // Speed
+    uint16_t baseHue = millis() * 20; 
     for (int i = 0; i < NUM_LEDS; i++) {
-        CRGB color = CHSV(baseHue + (i * 20), 255, 255);
-        ledsLeft[i] = ledsRight[i] = color;
+        uint32_t c = stripLeft.gamma32(stripLeft.ColorHSV(baseHue + (i * 6553), 255, 255));
+        stripLeft.setPixelColor(i, c);
+        stripRight.setPixelColor(i, c);
     }
 }
 
 void EyeMatrix::modeHypnoticLines() {
-    // Smoothly cross-fading rows using FastLED math
+    fadeBoth(30);
+    
     unsigned long t = millis();
-    uint8_t phase = (t / 100) % 3;
-    CRGB color = CHSV((t / 10) % 256, 255, 255);
-
-    fadeBoth(80);
-
-    if (phase == 0)      for (int i = 0; i < 3;  i++) ledsLeft[i] = ledsRight[i] = color;
-    else if (phase == 1) for (int i = 4; i < 7;  i++) ledsLeft[i] = ledsRight[i] = color;
-    else                 for (int i = 8; i < 10; i++) ledsLeft[i] = ledsRight[i] = color;
+    int phase = (t / 150) % 3;
+    uint32_t c = stripLeft.gamma32(stripLeft.ColorHSV((t * 15) % 65536, 255, 255));
+    
+    if (phase == 0) {
+        for (int i = 0; i < 3; i++) { stripLeft.setPixelColor(i, c); stripRight.setPixelColor(i, c); }
+    } else if (phase == 1) {
+        for (int i = 4; i < 7; i++) { stripLeft.setPixelColor(i, c); stripRight.setPixelColor(i, c); }
+    } else {
+        for (int i = 8; i < 10; i++) { stripLeft.setPixelColor(i, c); stripRight.setPixelColor(i, c); }
+    }
+    delay(10);
 }
 
 void EyeMatrix::modeFireFlicker() {
-    // Realistic fire using Perlin noise
     for (int i = 0; i < NUM_LEDS; i++) {
-        uint8_t noiseLeft = inoise8(i * 30, millis() / 3);
-        uint8_t noiseRight = inoise8((i + 10) * 30, millis() / 3);
+        int flicker = random(0, 150);
+        uint8_t r = 255;
+        uint8_t g = 255 - flicker;
+        uint8_t b = (flicker > 100) ? 0 : (100 - flicker);
+        stripLeft.setPixelColor(i, stripLeft.Color(r, g, b));
         
-        // Map noise to fire colors (Hue 0-40)
-        uint8_t hueLeft = map(noiseLeft, 0, 255, 0, 40);
-        uint8_t hueRight = map(noiseRight, 0, 255, 0, 40);
-        
-        ledsLeft[i] = CHSV(hueLeft, 255, qadd8(noiseLeft, 50));
-        ledsRight[i] = CHSV(hueRight, 255, qadd8(noiseRight, 50));
+        flicker = random(0, 150);
+        r = 255;
+        g = 255 - flicker;
+        b = (flicker > 100) ? 0 : (100 - flicker);
+        stripRight.setPixelColor(i, stripRight.Color(r, g, b));
     }
+    delay(20); 
 }
 
 void EyeMatrix::modePoliceStrobe() {
-    // Rapid triple-flash alternating
-    uint8_t beat = beat8(60); // 60 BPM for the full cycle
+    fillBoth(0);
     
-    fillBoth(CRGB::Black);
+    unsigned long t = millis() % 600;
     
-    if (beat < 128) {
-        // Left eye flashes
-        if (beat % 32 < 16) {
-            fill_solid(ledsLeft, NUM_LEDS, CRGB::Red);
+    if (t < 300) {
+        // Left eye flashes red
+        if ((t / 50) % 2 == 0) {
+            for(int i=0; i<NUM_LEDS; i++) stripLeft.setPixelColor(i, stripLeft.Color(255, 0, 0));
         }
     } else {
-        // Right eye flashes
-        if (beat % 32 < 16) {
-            fill_solid(ledsRight, NUM_LEDS, CRGB::Blue);
+        // Right eye flashes blue
+        if ((t / 50) % 2 == 0) {
+            for(int i=0; i<NUM_LEDS; i++) stripRight.setPixelColor(i, stripRight.Color(0, 0, 255));
         }
     }
 }
 
 void EyeMatrix::modeCyberSparkle() {
-    fadeBoth(60);
-    // Random injection
-    if (random8() < 120) {
-        ledsLeft[random8(NUM_LEDS)] = CHSV(random8(), 200, 255);
+    fadeBoth(30);
+    
+    if (random(0, 100) < 30) {
+        stripLeft.setPixelColor(random(0, NUM_LEDS), stripLeft.ColorHSV(random(0, 65535), 200, 255));
     }
-    if (random8() < 120) {
-        ledsRight[random8(NUM_LEDS)] = CHSV(random8(), 200, 255);
+    if (random(0, 100) < 30) {
+        stripRight.setPixelColor(random(0, NUM_LEDS), stripRight.ColorHSV(random(0, 65535), 200, 255));
     }
+    delay(10);
 }
 
 // ----------------------------------------------------------------------------
@@ -199,7 +232,8 @@ void EyeMatrix::modeCyberSparkle() {
 // ----------------------------------------------------------------------------
 
 void EyeMatrix::displaySignalLoss() {
-    uint8_t val = beatsin8(20, 0, 150); // Slow red pulsing
-    fillBoth(CRGB(val, 0, 0));
+    float val = (sin(millis() / 300.0) + 1.0) / 2.0; // 0.0 to 1.0
+    uint8_t r = val * 255;
+    fillBoth(stripLeft.Color(r, 0, 0));
     show();
 }

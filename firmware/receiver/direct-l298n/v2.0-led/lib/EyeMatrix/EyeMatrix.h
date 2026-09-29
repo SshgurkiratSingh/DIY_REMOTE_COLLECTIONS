@@ -1,21 +1,19 @@
 #pragma once
 
 #include <Arduino.h>
-#include <FastLED.h>
+#include <Adafruit_NeoPixel.h>
 #include "Config.h"
 
 // Encapsulates state for the various animation modes
 struct AnimState {
     unsigned long lastUpdate;
     uint8_t step;
-    uint8_t hue;
     int16_t scanPos;
     int8_t  scanDir;
     
     void reset() {
         lastUpdate = 0;
         step = 0;
-        hue = 0;
         scanPos = 0;
         scanDir = 1;
     }
@@ -29,16 +27,13 @@ public:
     // Call in the main loop to drive the currently selected mode
     void update(int mode);
     
-    // Set the overall brightness
-    void setBrightness(uint8_t b);
-    
     // Display the signal loss alert
     void displaySignalLoss();
 
 private:
     // Core drawing utilities
     void show();
-    void fillBoth(CRGB color);
+    void fillBoth(uint32_t color);
     void fadeBoth(uint8_t amount);
     void maskHiddenLEDs();
     
@@ -53,9 +48,9 @@ private:
     void modeFireFlicker();
     void modePoliceStrobe();
     void modeCyberSparkle();
-    
-    CRGB ledsLeft[NUM_LEDS];
-    CRGB ledsRight[NUM_LEDS];
+
+    Adafruit_NeoPixel stripLeft;
+    Adafruit_NeoPixel stripRight;
     
     AnimState state;
     int currentMode;
