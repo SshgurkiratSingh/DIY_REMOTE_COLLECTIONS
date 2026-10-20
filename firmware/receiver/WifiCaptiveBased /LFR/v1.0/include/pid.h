@@ -42,8 +42,9 @@ struct SensorReadings {
     int16_t position;      // -1000 (far left) to +1000 (far right)
     LineStatus status;
     uint8_t checkpoints;   // Count of checkpoints passed (up to 4)
-    uint8_t junctionIndex; // Progress in official map turn sequence
+    uint8_t junctionIndex; // Progress in custom/map turn sequence
     bool runFinished;
+    char solvedPath[MAX_PATH_STEPS]; // Simplified shortest path discovered
 };
 
 class PIDController {
@@ -70,6 +71,11 @@ public:
     // Execute in-place turn (blocking helper for clean 90-deg or 180-deg turns)
     void executeTurn(TurnAction action);
 
+    // Path simplification (Tremaux / LSRB dead-end cancellation)
+    void logTurn(char turn);
+    void simplifyPath();
+    const char* getSolvedPath() const;
+
     // Helper to get string description of line status
     static const char* statusToString(LineStatus st);
 
@@ -86,6 +92,10 @@ private:
     uint32_t m_lastCheckpointTime;
     uint32_t m_allBlackStartTime;
     bool m_allBlackCandidate;
+
+    // Dynamic path memory
+    char m_path[MAX_PATH_STEPS];
+    uint8_t m_pathLength;
 
     // Navigation decision helper
     TurnAction decideTurnAtJunction(bool canLeft, bool canStraight, bool canRight);

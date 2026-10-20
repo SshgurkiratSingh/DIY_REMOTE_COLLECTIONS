@@ -194,7 +194,17 @@ void loop() {
                 notifyMotorSafetyFeed();
                 Serial.println("[START] GO! Run timer started. Max duration: 10 minutes.");
             } else if (s_runState == RUN_STATE_FINISHED) {
-                // Reset for another practice run
+                // If robot discovered a simplified shortest path in autonomous run:
+                const char* solved = g_pid.getSolvedPath();
+                if (solved && strlen(solved) > 0) {
+                    Serial.printf("[RUN 2 READY] Arming robot with discovered shortest route: %s\n", solved);
+                    strncpy(g_params.customPath, solved, sizeof(g_params.customPath) - 1);
+                    g_params.customPath[sizeof(g_params.customPath) - 1] = '\0';
+                    g_params.navMode = NAV_MODE_CUSTOM_PATH;
+                    saveParameters(g_params);
+                    g_pid.updateParams(g_params);
+                }
+
                 s_runState = RUN_STATE_READY;
                 g_pid.reset();
                 emergencyStop();

@@ -4,26 +4,6 @@
 
 PIDController g_pid;
 
-// Pre-programmed shortest path turn sequence for the Official Competition Map:
-// 'L' = Turn Left, 'R' = Turn Right, 'S' = Go Straight
-static const char OFFICIAL_MAP_TURNS[] = {
-    'R', // J1: Turn North
-    'R', // J2: Turn East
-    'L', // J3: Turn North
-    'L', // J4: Turn West
-    'R', // J5: Turn North
-    'L', // J6: Turn West (top track)
-    'S', // J7: Straight West
-    'S', // J8: Straight West
-    'L', // J9: Turn South
-    'L', // J10: Turn East
-    'R', // J11: Turn South
-    'R', // J12: Turn West
-    'L', // J13: Turn South
-    'L'  // J14: Turn East into Zone B!
-};
-static const uint8_t OFFICIAL_MAP_TURNS_COUNT = sizeof(OFFICIAL_MAP_TURNS) / sizeof(OFFICIAL_MAP_TURNS[0]);
-
 PIDController::PIDController()
     : m_lastError(0.0f),
       m_integral(0.0f),
@@ -32,10 +12,12 @@ PIDController::PIDController()
       m_wasLineLost(false),
       m_lastCheckpointTime(0),
       m_allBlackStartTime(0),
-      m_allBlackCandidate(false)
+      m_allBlackCandidate(false),
+      m_pathLength(0)
 {
     memset(&m_params, 0, sizeof(m_params));
     memset(&m_readings, 0, sizeof(m_readings));
+    memset(m_path, 0, sizeof(m_path));
 }
 
 void PIDController::init(const RobotParameters& params) {
@@ -56,6 +38,10 @@ void PIDController::reset() {
     m_lastCheckpointTime = 0;
     m_allBlackStartTime = 0;
     m_allBlackCandidate = false;
+
+    m_pathLength = 0;
+    memset(m_path, 0, sizeof(m_path));
+    memset(m_readings.solvedPath, 0, sizeof(m_readings.solvedPath));
 
     m_readings.checkpoints = 0;
     m_readings.junctionIndex = 0;
@@ -86,19 +72,78 @@ bool PIDController::isFinished() const {
     return m_readings.runFinished;
 }
 
+const char* PIDController::getSolvedPath() const {
+    return m_readings.solvedPath;
+}
+
+void PIDController::logTurn(char turn) {
+    if (m_pathLength >= MAX_PATH_STEPS - 1) return;
+
+    m_path[m_pathLength++] = turn;
+    m_path[m_pathLength] = '\0';
+    Serial.printf("[PATH LOG] Recorded turn: '%c' (Total: %s)\n", turn, m_path);
+
+    simplifyPath();
+    strncpy(m_readings.solvedPath, m_path, sizeof(m_readings.solvedPath) - 1);
+    m_readings.solvedPath[sizeof(m_readings.solvedPath) - 1] = '\0';
+}
+
+void PIDController::simplifyPath() {
+    // Need at least 3 turns to simplify: [X, B, Y]
+    if (m_pathLength < 3) return;
+    if (m_path[m_pathLength - 2] != 'B') return;
+
+    char first = m_path[m_pathLength - 3];
+    char second = m_path[m_pathLength - 1];
+    char replacement = 0;
+
+    // Standard LSRB Substitution Rules
+    if (first == 'L' && second == 'L') replacement = 'S';
+    else if (first == 'L' && second == 'S') replacement = 'R';
+    else if (first == 'R' && second == 'L') replacement = 'B';
+    else if (first == 'S' && second == 'L') replacement = 'R';
+    else if (first == 'S' && second == 'S') replacement = 'B';
+    else if (first == 'L' && second == 'R') replacement = 'B';
+    else if (first == 'R' && second == 'S') replacement = 'L';
+    else if (first == 'R' && second == 'R') replacement = 'S';
+    else if (first == 'S' && second == 'R') replacement = 'L';
+
+    if (replacement != 0) {
+        m_path[m_pathLength - 3] = replacement;
+        m_pathLength -= 2;
+        m_path[m_pathLength] = '\0';
+        Serial.printf("[PATH SIMPLIFY] Substituted '%c B %c' -> '%c'. New Path: %s\n",
+                      first, second, replacement, m_path);
+
+        // Recursive check in case new turn also ends in 'B'
+        simplifyPath();
+    }
+}
+
 TurnAction PIDController::decideTurnAtJunction(bool canLeft, bool canStraight, bool canRight) {
-    if (m_params.navMode == NAV_MODE_OFFICIAL_MAP) {
-        if (m_readings.junctionIndex < OFFICIAL_MAP_TURNS_COUNT) {
-            char choice = OFFICIAL_MAP_TURNS[m_readings.junctionIndex++];
-            Serial.printf("[MAP NAV] Junction #%u -> Turn '%c'\n", m_readings.junctionIndex, choice);
-            if (choice == 'L') return TURN_LEFT_90;
-            if (choice == 'R') return TURN_RIGHT_90;
-            if (choice == 'S') return TURN_STRAIGHT;
+    // Mode 2: Custom / Pre-Programmed Route Sequence (for specified or user-entered maps)
+    if (m_params.navMode == NAV_MODE_CUSTOM_PATH) {
+        size_t len = strlen(m_params.customPath);
+        if (m_readings.junctionIndex < len) {
+            char choice = m_params.customPath[m_readings.junctionIndex++];
+            Serial.printf("[CUSTOM NAV] Junction #%u -> Turn '%c'\n", m_readings.junctionIndex, choice);
+            if (choice == 'L' || choice == 'l') return TURN_LEFT_90;
+            if (choice == 'R' || choice == 'r') return TURN_RIGHT_90;
+            if (choice == 'S' || choice == 's') return TURN_STRAIGHT;
+            if (choice == 'B' || choice == 'b') return TURN_UTURN_180;
         }
-        // Fallback to LSRB if past sequence
+        // Past end of sequence: fallback to Autonomous Left-Hand Rule
     }
 
-    // Default: Autonomous Left-Hand Rule (LSRB)
+    // Mode 1: Autonomous Right-Hand Rule (RSLB)
+    if (m_params.navMode == NAV_MODE_AUTONOMOUS_RSLB) {
+        if (canRight)    return TURN_RIGHT_90;
+        if (canStraight) return TURN_STRAIGHT;
+        if (canLeft)     return TURN_LEFT_90;
+        return TURN_UTURN_180;
+    }
+
+    // Mode 0: Autonomous Left-Hand Rule (LSRB) - Default for unknown/changed maps
     if (canLeft)     return TURN_LEFT_90;
     if (canStraight) return TURN_STRAIGHT;
     if (canRight)    return TURN_RIGHT_90;
@@ -106,7 +151,10 @@ TurnAction PIDController::decideTurnAtJunction(bool canLeft, bool canStraight, b
 }
 
 void PIDController::executeTurn(TurnAction action) {
-    if (action == TURN_NONE || action == TURN_STRAIGHT) {
+    if (action == TURN_NONE) return;
+
+    if (action == TURN_STRAIGHT) {
+        logTurn('S');
         // Inch straight through intersection to clear transverse line
         setMotorSpeed(m_params.baseSpeed, m_params.baseSpeed);
         delay(JUNCTION_INCH_TIME_MS);
@@ -118,6 +166,7 @@ void PIDController::executeTurn(TurnAction action) {
     int16_t turnSpd = TURN_SPEED;
 
     if (action == TURN_LEFT_90) {
+        logTurn('L');
         Serial.println("[NAV] Executing 90-deg LEFT turn...");
         // Pivot left: Left motor reverse, Right motor forward
         setMotorSpeed(-turnSpd, turnSpd);
@@ -135,6 +184,7 @@ void PIDController::executeTurn(TurnAction action) {
             delay(5);
         }
     } else if (action == TURN_RIGHT_90) {
+        logTurn('R');
         Serial.println("[NAV] Executing 90-deg RIGHT turn...");
         // Pivot right: Left motor forward, Right motor reverse
         setMotorSpeed(turnSpd, -turnSpd);
@@ -152,6 +202,7 @@ void PIDController::executeTurn(TurnAction action) {
             delay(5);
         }
     } else if (action == TURN_UTURN_180) {
+        logTurn('B');
         Serial.println("[NAV] Dead end! Executing 180-deg U-TURN...");
         // Pivot around: Left motor reverse, Right motor forward
         setMotorSpeed(-turnSpd, turnSpd);
@@ -231,6 +282,7 @@ void PIDController::compute(uint16_t rawL, uint16_t rawC, uint16_t rawR,
             Serial.println("\n***************************************************");
             Serial.println("   [ZONE B REACHED] End Point Detected! RUN COMPLETE!   ");
             Serial.printf("   Checkpoints logged: %u / 4\n", m_readings.checkpoints);
+            Serial.printf("   Shortest Solved Route: %s\n", m_readings.solvedPath);
             Serial.println("***************************************************\n");
             return;
         }
@@ -263,8 +315,8 @@ void PIDController::compute(uint16_t rawL, uint16_t rawC, uint16_t rawR,
             m_lineLostStartTime = millis();
         }
 
-        // In Maze Solving mode or Official Map mode: Dead end requires 180° U-turn!
-        if (m_params.navMode == NAV_MODE_LSRB_MAZE || m_params.navMode == NAV_MODE_OFFICIAL_MAP) {
+        // In Maze Solving modes: Dead end requires 180° U-turn!
+        if (m_params.navMode != NAV_MODE_PID_LINE) {
             // Inch forward tiny bit to confirm true dead end
             delay(50);
             uint16_t cL = normalizeSensor(analogRead(SENSOR_LEFT_PIN), m_params.minL, m_params.maxL, invert);
@@ -393,6 +445,7 @@ const char* PIDController::statusToString(LineStatus st) {
         case LINE_END_ZONE:       return "Zone B Finish";
         case LINE_TURNING:        return "Turning";
         case LINE_RECOVERY:       return "Recovery";
+        case LINE_LOST_STOPPED:   return "Stopped";
         case LINE_FINISHED:       return "Complete";
         default:                  return "Unknown";
     }

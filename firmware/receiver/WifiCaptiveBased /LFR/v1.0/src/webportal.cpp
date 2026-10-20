@@ -99,7 +99,7 @@ a{color:#6bf}
 .m-grid .btn{margin:0}
 
 /* Calibration progress */
-#calibBox{display:none;padding:8px;background:#1a1800;border:1px solid #443;border-radius:3px;margin:10px 0;text-align:center;font-size:12px;color:#bb3}
+#calibBox{display:none;padding:8px;background:#1a1800;border:1px solid #443;border-radius:3px;margin-io:10px 0;text-align:center;font-size:12px;color:#bb3}
 #calibBox .prog{height:4px;background:#222;border-radius:2px;margin-top:6px;overflow:hidden}
 #calibBox .prog-fill{height:100%;width:0%;background:#aa3;transition:width 0.2s}
 
@@ -116,7 +116,7 @@ a{color:#6bf}
 .thresh-row .val{width:40px;text-align:right;font-family:'SF Mono',Consolas,monospace;color:#ccc}
 
 /* Telemetry badges */
-.stat-box{display:flex;justify-content:space-between;background:#181818;border:1px solid #222;padding:6px 8px;border-radius:3px;margin-bottom:8px;font-size:11px}
+.stat-box{display:flex;justify-content:space-between;background:#181818;border:1px solid #222;padding:6px 8px;border-radius:3px;margin-bottom:6px;font-size:11px}
 </style>
 </head>
 <body>
@@ -130,7 +130,7 @@ a{color:#6bf}
 
   <div class="tabs">
     <button class="on" onclick="tab('sensors',this)">Sensors</button>
-    <button onclick="tab('pid',this)">PID</button>
+    <button onclick="tab('pid',this)">PID &amp; Route</button>
     <button onclick="tab('motors',this)">Motors</button>
     <button onclick="tab('save',this)">Save</button>
   </div>
@@ -143,6 +143,9 @@ a{color:#6bf}
       <div class="stat-box">
         <span>Checkpoints: <strong class="mono" id="cpCount" style="color:#eee">0</strong> / 4</span>
         <span>Goal: <span class="ind" id="goalInd"></span><strong class="mono" id="goalTxt" style="color:#eee">Seeking</strong></span>
+      </div>
+      <div class="stat-box" style="margin-top:-2px">
+        <span>Solved Route: <strong class="mono" id="solvedRoute" style="color:#6bf">-</strong></span>
       </div>
 
       <table class="s-table">
@@ -227,15 +230,21 @@ a{color:#6bf}
   <!-- PID & NAVIGATION -->
   <div id="p-pid" class="pane">
     <div class="sec">
-      <div class="sec-title">Navigation Strategy</div>
+      <div class="sec-title">Navigation &amp; Maze Routing</div>
       <div class="field">
-        <label>Routing Mode</label>
-        <select id="sel_nav">
-          <option value="1">Official Competition Map (Pre-Programmed Shortest Route)</option>
-          <option value="0">Autonomous Maze Solver (Left-Hand Rule / LSRB)</option>
-          <option value="2">Standard PID Line Follower</option>
+        <label>Routing Strategy</label>
+        <select id="sel_nav" onchange="toggleRouteBox()">
+          <option value="0">Autonomous Left-Hand Rule (LSRB) [Default for unknown maps]</option>
+          <option value="1">Autonomous Right-Hand Rule (RSLB)</option>
+          <option value="2">Custom / Pre-Programmed Route Sequence</option>
+          <option value="3">Standard PID Line Follower</option>
         </select>
-        <div class="hint" style="margin-top:4px">Official Map: Uses exact turn sequence for the Rulebook arena layout.<br>LSRB: Fully autonomous exploration for any unknown grid track.</div>
+        <div class="hint" style="margin-top:4px">LSRB/RSLB: Solves any unknown or changed maze autonomously without hardcoded turns.<br>Custom: Executes specified turn letters (L, R, S).</div>
+      </div>
+      <div class="field" id="box_customRoute">
+        <label>Custom Route Sequence (L = Left, R = Right, S = Straight)</label>
+        <input type="text" id="txt_route" maxlength="64" placeholder="e.g. RRLLRLSSLLRRLL" style="width:100%;padding:6px 8px;background:#1a1a1a;border:1px solid #333;border-radius:3px;color:#eee;font-family:'SF Mono',Consolas,monospace;font-size:13px;letter-spacing:1px;text-transform:uppercase">
+        <div class="hint">Type the turn sequence you see on the arena track during the 5-min prep window.</div>
       </div>
     </div>
 
@@ -336,6 +345,11 @@ function tab(name,el){
   if(name==='save')loadParams();
 }
 
+function toggleRouteBox(){
+  const isCustom = $('sel_nav').value === '2';
+  $('box_customRoute').style.display = isCustom ? 'block' : 'none';
+}
+
 function sv(k){
   const r=$('rng_'+k),n=$('num_'+k);
   if(document.activeElement===r)n.value=r.value;
@@ -359,6 +373,7 @@ async function fetchS(){
     $('robotState').innerText=d.status||'-';
     
     if(d.checkpoints!==undefined) $('cpCount').innerText=d.checkpoints;
+    if(d.solvedPath) $('solvedRoute').innerText=d.solvedPath;
     if(d.finished){
       $('goalInd').className='ind done';
       $('goalTxt').innerText='COMPLETE';
@@ -422,14 +437,18 @@ async function loadParams(){
     $('rng_max').value=d.maxSpeed;$('num_max').value=d.maxSpeed;
     $('sel_pol').value=d.invertLine;
     $('sel_nav').value=d.navMode;
+    if(d.customPath) $('txt_route').value = d.customPath;
+    toggleRouteBox();
 
-    let navDesc = 'Official Competition Map';
-    if(d.navMode==0) navDesc = 'Autonomous LSRB Maze Solver';
-    else if(d.navMode==2) navDesc = 'Standard PID Line Follower';
+    let navDesc = 'Autonomous LSRB (Left-Hand Rule)';
+    if(d.navMode==1) navDesc = 'Autonomous RSLB (Right-Hand Rule)';
+    else if(d.navMode==2) navDesc = 'Custom Route Sequence (' + (d.customPath||'-') + ')';
+    else if(d.navMode==3) navDesc = 'Standard PID Line Follower';
 
     $('rvTable').innerHTML=
       '<tr><td>Calibration</td><td>'+(d.isCalibrated?'Yes':'No')+'</td></tr>'+
-      '<tr><td>Routing Strategy</td><td>'+navDesc+'</td></tr>'+
+      '<tr><td>Strategy</td><td>'+navDesc+'</td></tr>'+
+      '<tr><td>Custom Route</td><td>'+(d.customPath||'-')+'</td></tr>'+
       '<tr><td>Left range</td><td>'+d.minL+' - '+d.maxL+' (T:'+d.threshL+')</td></tr>'+
       '<tr><td>Center range</td><td>'+d.minC+' - '+d.maxC+' (T:'+d.threshC+')</td></tr>'+
       '<tr><td>Right range</td><td>'+d.minR+' - '+d.maxR+' (T:'+d.threshR+')</td></tr>'+
@@ -451,7 +470,8 @@ async function submitPid(){
     kp:$('rng_kp').value,ki:$('rng_ki').value,kd:$('rng_kd').value,
     baseSpeed:$('rng_base').value,minSpeed:$('rng_min').value,maxSpeed:$('rng_max').value,
     invertLine:$('sel_pol').value,
-    navMode:$('sel_nav').value
+    navMode:$('sel_nav').value,
+    customPath:$('txt_route').value
   });
   const r=await fetch('/api/params',{method:'POST',body:b});
   if(r.ok){status('Settings saved','ok');loadParams()}
@@ -468,6 +488,7 @@ async function saveAll(){
     baseSpeed:$('rng_base').value,minSpeed:$('rng_min').value,maxSpeed:$('rng_max').value,
     invertLine:$('sel_pol').value,
     navMode:$('sel_nav').value,
+    customPath:$('txt_route').value,
     threshL:$('sl_thL').value,threshC:$('sl_thC').value,threshR:$('sl_thR').value
   });
   const r=await fetch('/api/params',{method:'POST',body:b});
@@ -555,13 +576,13 @@ void initWebPortal() {
         g_pid.compute(rawL, rawC, rawR, dummyL, dummyR);
         SensorReadings sr = g_pid.getReadings();
 
-        char json[380];
+        char json[450];
         snprintf(json, sizeof(json),
                  "{\"raw\":{\"l\":%u,\"c\":%u,\"r\":%u},"
                  "\"norm\":{\"l\":%u,\"c\":%u,\"r\":%u},"
                  "\"on_line\":{\"l\":%s,\"c\":%s,\"r\":%s},"
                  "\"position\":%d,\"status\":\"%s\","
-                 "\"checkpoints\":%u,\"finished\":%s}",
+                 "\"checkpoints\":%u,\"finished\":%s,\"solvedPath\":\"%s\"}",
                  sr.rawL, sr.rawC, sr.rawR,
                  sr.normL, sr.normC, sr.normR,
                  sr.onLineL ? "true" : "false",
@@ -570,7 +591,8 @@ void initWebPortal() {
                  sr.position,
                  PIDController::statusToString(sr.status),
                  sr.checkpoints,
-                 sr.runFinished ? "true" : "false");
+                 sr.runFinished ? "true" : "false",
+                 sr.solvedPath);
 
         request->send(200, "application/json", json);
     });
@@ -579,7 +601,7 @@ void initWebPortal() {
     // API: GET /api/params - Stored configuration
     // ------------------------------------------------------------------------
     s_server.on("/api/params", HTTP_GET, [](AsyncWebServerRequest *request) {
-        char json[450];
+        char json[500];
         snprintf(json, sizeof(json),
                  "{\"isCalibrated\":%u,"
                  "\"minL\":%u,\"maxL\":%u,\"threshL\":%u,"
@@ -587,14 +609,14 @@ void initWebPortal() {
                  "\"minR\":%u,\"maxR\":%u,\"threshR\":%u,"
                  "\"kp\":%.2f,\"ki\":%.3f,\"kd\":%.2f,"
                  "\"baseSpeed\":%d,\"minSpeed\":%d,\"maxSpeed\":%d,"
-                 "\"invertLine\":%u,\"navMode\":%u,\"bootCount\":%u}",
+                 "\"invertLine\":%u,\"navMode\":%u,\"customPath\":\"%s\",\"bootCount\":%u}",
                  g_params.isCalibrated,
                  g_params.minL, g_params.maxL, g_params.threshL,
                  g_params.minC, g_params.maxC, g_params.threshC,
                  g_params.minR, g_params.maxR, g_params.threshR,
                  g_params.kp, g_params.ki, g_params.kd,
                  g_params.baseSpeed, g_params.minSpeed, g_params.maxSpeed,
-                 g_params.invertLine, g_params.navMode, getBootCount());
+                 g_params.invertLine, g_params.navMode, g_params.customPath, getBootCount());
 
         request->send(200, "application/json", json);
     });
@@ -642,6 +664,18 @@ void initWebPortal() {
 
         if (request->hasParam("invertLine", true)) g_params.invertLine = request->getParam("invertLine", true)->value().toInt();
         if (request->hasParam("navMode", true)) g_params.navMode = request->getParam("navMode", true)->value().toInt();
+
+        if (request->hasParam("customPath", true)) {
+            String r = request->getParam("customPath", true)->value();
+            r.toUpperCase();
+            String clean = "";
+            for (size_t i = 0; i < r.length(); i++) {
+                char c = r.charAt(i);
+                if (c == 'L' || c == 'R' || c == 'S' || c == 'B') clean += c;
+            }
+            strncpy(g_params.customPath, clean.c_str(), sizeof(g_params.customPath) - 1);
+            g_params.customPath[sizeof(g_params.customPath) - 1] = '\0';
+        }
 
         if (request->hasParam("threshL", true)) g_params.threshL = request->getParam("threshL", true)->value().toInt();
         if (request->hasParam("threshC", true)) g_params.threshC = request->getParam("threshC", true)->value().toInt();

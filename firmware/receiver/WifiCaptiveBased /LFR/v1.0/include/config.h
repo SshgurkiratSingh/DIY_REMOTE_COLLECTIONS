@@ -49,11 +49,18 @@
 #define PREFERENCES_NAMESPACE     "lfr_cal"
 
 // ============================================================================
-//  Navigation Modes (Rulebook & Map)
+//  Navigation Modes (Dynamic & Unknown Map Ready)
 // ============================================================================
-#define NAV_MODE_LSRB_MAZE      0    // Autonomous Left-Hand Rule Maze Solver (LSRB)
-#define NAV_MODE_OFFICIAL_MAP   1    // Competition Map Shortest Route (Pre-programmed)
-#define NAV_MODE_PID_LINE       2    // Standard PID Line Follower
+#define NAV_MODE_AUTONOMOUS_LSRB 0    // Autonomous Left-Hand Rule (LSRB) - default for unknown/changed maps
+#define NAV_MODE_AUTONOMOUS_RSLB 1    // Autonomous Right-Hand Rule (RSLB)
+#define NAV_MODE_CUSTOM_PATH     2    // Pre-programmed or user-entered turn sequence
+#define NAV_MODE_PID_LINE        3    // Standard PID Line Follower
+
+#define DEFAULT_NAV_MODE         NAV_MODE_AUTONOMOUS_LSRB
+#define MAX_PATH_STEPS           64
+
+// Default route from Rulebook Map
+#define DEFAULT_RULEBOOK_ROUTE   "RRLLRLSSLLRRLL"
 
 // ============================================================================
 //  Default Parameters
@@ -68,8 +75,6 @@
 
 #define DEFAULT_RAW_MIN         0
 #define DEFAULT_RAW_MAX         4095
-
-#define DEFAULT_NAV_MODE        NAV_MODE_OFFICIAL_MAP
 
 // Scaling factor for PID calculation: correction = (P + I + D) / PID_SCALE_DIVISOR
 #define PID_SCALE_DIVISOR       100.0f
@@ -88,4 +93,3 @@
 #define END_ZONE_INCH_MS        220    // Inching duration to confirm Zone B large black square
 #define CHECKPOINT_DEBOUNCE_MS  1000   // Minimum time between checkpoint triggers
 #define LINE_LOST_TIMEOUT_MS    1500   // Search timeout when line is lost
-
