@@ -10,8 +10,18 @@ enum OperatingMode {
     MODE_RUNNING
 };
 
+enum RunState {
+    RUN_STATE_READY,     // Ready at Zone A, waiting for physical BOOT button press
+    RUN_STATE_ACTIVE,    // Run started, autonomously navigating track
+    RUN_STATE_FINISHED   // Zone B (End point) reached, stopped
+};
+
 static OperatingMode s_mode = MODE_RUNNING;
+static RunState s_runState = RUN_STATE_READY;
 static bool s_hasValidCalibration = false;
+
+static uint32_t s_runStartTime = 0;
+static uint32_t s_runDuration = 0;
 
 // LED Blinker helper
 static uint32_t s_lastLedToggle = 0;
@@ -20,7 +30,7 @@ static bool s_ledState = false;
 static void updateStatusLed() {
     uint32_t now = millis();
     if (s_mode == MODE_CALIBRATION) {
-        // Fast blink: 100ms interval
+        // Fast blink: 100ms interval (Calibration active)
         if (now - s_lastLedToggle >= 100) {
             s_lastLedToggle = now;
             s_ledState = !s_ledState;
@@ -28,12 +38,17 @@ static void updateStatusLed() {
         }
     } else {
         // Running Mode
-        if (s_hasValidCalibration) {
-            // Solid ON
+        if (s_runState == RUN_STATE_READY) {
+            // Heartbeat: 2 quick blinks every 1200ms (Ready for button press)
+            uint32_t phase = now % 1200;
+            bool on = (phase < 80) || (phase >= 180 && phase < 260);
+            digitalWrite(STATUS_LED_PIN, on ? HIGH : LOW);
+        } else if (s_runState == RUN_STATE_ACTIVE) {
+            // Solid ON while running on line
             digitalWrite(STATUS_LED_PIN, HIGH);
-        } else {
-            // Slow blink: 600ms interval (no valid calibration data)
-            if (now - s_lastLedToggle >= 600) {
+        } else if (s_runState == RUN_STATE_FINISHED) {
+            // Slow blink: 400ms toggle (Run finished / Goal reached)
+            if (now - s_lastLedToggle >= 400) {
                 s_lastLedToggle = now;
                 s_ledState = !s_ledState;
                 digitalWrite(STATUS_LED_PIN, s_ledState ? HIGH : LOW);
@@ -61,7 +76,8 @@ void setup() {
     delay(200);
     Serial.println("\n==============================================");
     Serial.println("   ESP32 PID LINE FOLLOWING ROBOT (LFR)");
-    Serial.println("   Captive Portal Calibration System v1.0");
+    Serial.println("   Captive Portal Calibration System v1.1");
+    Serial.println("   Rulebook Competition & Maze Engine");
     Serial.println("==============================================");
 
     // Pin configuration
@@ -102,6 +118,7 @@ void setup() {
                       bootCount, CALIBRATION_BOOT_INTERVAL);
     } else {
         s_mode = MODE_RUNNING;
+        s_runState = RUN_STATE_READY;
         Serial.printf("[BOOT] Entering RUNNING MODE (Boot Count = %u). Valid calibration = %s\n",
                       bootCount, s_hasValidCalibration ? "YES" : "NO");
     }
@@ -113,7 +130,8 @@ void setup() {
         // Initialize PID controller with loaded parameters
         g_pid.init(g_params);
         notifyMotorSafetyFeed();
-        Serial.println("[LFR] Starting Line Following Control Loop at 100Hz...");
+        Serial.println("[LFR] Robot is in READY state at Zone A.");
+        Serial.println("[LFR] Press physical BOOT button (GPIO 0) on judge's signal to start run.");
     }
 }
 
@@ -139,13 +157,74 @@ void loop() {
         delay(2);
     } else {
         // ====================================================================
-        //  RUNNING MODE - 100Hz (10ms) PID Line Following Loop
+        //  RUNNING MODE - Competition Procedure
+        // ====================================================================
+        uint32_t now = millis();
+
+        // Check BOOT button (physical switch rule)
+        if (digitalRead(BOOT_BUTTON_PIN) == LOW) {
+            uint32_t btnStart = millis();
+            while (digitalRead(BOOT_BUTTON_PIN) == LOW) {
+                // If held > 2s: Reboot to Calibration Mode
+                if (millis() - btnStart > 2000) {
+                    Serial.println("[BOOT] Button held 2s! Rebooting to Calibration Mode...");
+                    emergencyStop();
+                    forceCalibrationNextBoot();
+                    delay(100);
+                    ESP.restart();
+                }
+                delay(10);
+            }
+
+            // Short button press detected:
+            if (s_runState == RUN_STATE_READY) {
+                Serial.println("[START] Physical button pressed! Starting 3-second countdown...");
+                // 3.. 2.. 1.. countdown with LED
+                for (int i = 3; i > 0; i--) {
+                    Serial.printf("[START] %d...\n", i);
+                    digitalWrite(STATUS_LED_PIN, HIGH);
+                    delay(200);
+                    digitalWrite(STATUS_LED_PIN, LOW);
+                    delay(800);
+                }
+
+                s_runStartTime = millis();
+                s_runState = RUN_STATE_ACTIVE;
+                g_pid.reset();
+                notifyMotorSafetyFeed();
+                Serial.println("[START] GO! Run timer started. Max duration: 10 minutes.");
+            } else if (s_runState == RUN_STATE_FINISHED) {
+                // Reset for another practice run
+                s_runState = RUN_STATE_READY;
+                g_pid.reset();
+                emergencyStop();
+                Serial.println("[LFR] Reset to READY state at Zone A.");
+            }
+        }
+
+        // If in READY or FINISHED: Keep motors stopped
+        if (s_runState != RUN_STATE_ACTIVE) {
+            emergencyStop();
+            delay(10);
+            return;
+        }
+
+        // ====================================================================
+        //  ACTIVE RUN: 100Hz (10ms) PID Line Following & Maze Navigation Loop
         // ====================================================================
         static uint32_t s_lastLoopTick = 0;
-        uint32_t now = millis();
 
         if (now - s_lastLoopTick >= (1000 / LOOP_RATE_HZ)) {
             s_lastLoopTick = now;
+
+            // Check 10-minute maximum run duration rule
+            if (now - s_runStartTime > (10UL * 60UL * 1000UL)) {
+                emergencyStop();
+                s_runState = RUN_STATE_FINISHED;
+                s_runDuration = now - s_runStartTime;
+                Serial.println("[TIMEOUT] 10-minute maximum run duration reached. Motors halted.");
+                return;
+            }
 
             // Read analog IR sensors
             uint16_t rawL = analogRead(SENSOR_LEFT_PIN);
@@ -159,8 +238,23 @@ void loop() {
                 int16_t leftSpeed = 0;
                 int16_t rightSpeed = 0;
 
-                // Compute PID response and edge cases
+                // Compute PID response and maze navigation
                 g_pid.compute(rawL, rawC, rawR, leftSpeed, rightSpeed);
+
+                // Check if Zone B (End Point) has been reached
+                if (g_pid.isFinished()) {
+                    emergencyStop();
+                    s_runState = RUN_STATE_FINISHED;
+                    s_runDuration = millis() - s_runStartTime;
+
+                    SensorReadings sr = g_pid.getReadings();
+                    Serial.println("\n==============================================");
+                    Serial.println("   OFFICIAL RUN COMPLETED!");
+                    Serial.printf("   Time Elapsed: %.2f seconds\n", s_runDuration / 1000.0f);
+                    Serial.printf("   Checkpoints Reached: %u / 4\n", sr.checkpoints);
+                    Serial.println("==============================================\n");
+                    return;
+                }
 
                 // Drive L298N motors
                 setMotorSpeed(leftSpeed, rightSpeed);
@@ -170,12 +264,13 @@ void loop() {
                 if (now - s_lastLog >= 500) {
                     s_lastLog = now;
                     SensorReadings sr = g_pid.getReadings();
-                    Serial.printf("[LFR] Raw:[%4u,%4u,%4u] Norm:[%3u,%3u,%3u] Pos:%5d Speeds:[L:%4d, R:%4d] Status:%s\n",
+                    Serial.printf("[LFR] Raw:[%4u,%4u,%4u] Norm:[%3u,%3u,%3u] Pos:%5d Speeds:[L:%4d, R:%4d] Status:%s CP:%u/4\n",
                                   sr.rawL, sr.rawC, sr.rawR,
                                   sr.normL, sr.normC, sr.normR,
                                   sr.position,
                                   leftSpeed, rightSpeed,
-                                  PIDController::statusToString(sr.status));
+                                  PIDController::statusToString(sr.status),
+                                  sr.checkpoints);
                 }
             } else {
                 // No valid calibration data: stop motors and wait for calibration
@@ -190,23 +285,6 @@ void loop() {
 
         // Safety watchdog: halts motors if sensor loop stalls > 500ms
         checkMotorSafety();
-
-        // Check if user holds BOOT button during run to switch to calibration mode
-        if (digitalRead(BOOT_BUTTON_PIN) == LOW) {
-            static uint32_t s_btnPressStart = 0;
-            if (s_btnPressStart == 0) s_btnPressStart = millis();
-            if (millis() - s_btnPressStart > 2000) {
-                Serial.println("[BOOT] BOOT button held 2s during run! Rebooting into Calibration Mode...");
-                emergencyStop();
-                forceCalibrationNextBoot();
-                delay(100);
-                ESP.restart();
-            }
-        } else {
-            // Button released
-            static uint32_t s_btnPressStart = 0;
-            s_btnPressStart = 0;
-        }
 
         delay(1);
     }

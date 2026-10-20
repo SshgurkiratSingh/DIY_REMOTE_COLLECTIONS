@@ -49,6 +49,13 @@
 #define PREFERENCES_NAMESPACE     "lfr_cal"
 
 // ============================================================================
+//  Navigation Modes (Rulebook & Map)
+// ============================================================================
+#define NAV_MODE_LSRB_MAZE      0    // Autonomous Left-Hand Rule Maze Solver (LSRB)
+#define NAV_MODE_OFFICIAL_MAP   1    // Competition Map Shortest Route (Pre-programmed)
+#define NAV_MODE_PID_LINE       2    // Standard PID Line Follower
+
+// ============================================================================
 //  Default Parameters
 // ============================================================================
 #define DEFAULT_KP              25.0f
@@ -62,14 +69,23 @@
 #define DEFAULT_RAW_MIN         0
 #define DEFAULT_RAW_MAX         4095
 
+#define DEFAULT_NAV_MODE        NAV_MODE_OFFICIAL_MAP
+
 // Scaling factor for PID calculation: correction = (P + I + D) / PID_SCALE_DIVISOR
 #define PID_SCALE_DIVISOR       100.0f
 #define PID_ANTI_WINDUP_LIMIT   10000.0f
 
 // ============================================================================
-//  Timing & Safety Configuration
+//  Timing & Maze Navigation Configuration
 // ============================================================================
 #define LOOP_RATE_HZ            100    // Main PID loop frequency (10ms)
 #define MOTOR_SAFETY_TIMEOUT_MS 500    // Stop motors if no sensor updates for >500ms
 #define CALIBRATION_DURATION_MS 10000  // 10 seconds calibration sweep
+
+#define JUNCTION_INCH_TIME_MS   120    // Inching time to align wheels with junction
+#define TURN_SPEED              140    // PWM speed during pivot turns and U-turns
+#define TURN_TIMEOUT_MS         2000   // Timeout for in-place turns
+#define END_ZONE_INCH_MS        220    // Inching duration to confirm Zone B large black square
+#define CHECKPOINT_DEBOUNCE_MS  1000   // Minimum time between checkpoint triggers
 #define LINE_LOST_TIMEOUT_MS    1500   // Search timeout when line is lost
+

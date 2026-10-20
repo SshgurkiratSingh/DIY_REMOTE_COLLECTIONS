@@ -67,6 +67,7 @@ void resetParametersToDefaults(RobotParameters& params) {
     params.maxSpeed = DEFAULT_MAX_SPEED;
 
     params.invertLine = 0; // Black line on white surface default
+    params.navMode = DEFAULT_NAV_MODE;
 
     Serial.println("[NVS] Parameters reset to factory defaults");
 }
@@ -100,8 +101,8 @@ bool loadParameters(RobotParameters& params) {
         return false;
     }
 
-    Serial.printf("[NVS] Loaded parameters. Calibrated=%u, Kp=%.2f, Ki=%.3f, Kd=%.2f, BaseSpeed=%d\n",
-                  params.isCalibrated, params.kp, params.ki, params.kd, params.baseSpeed);
+    Serial.printf("[NVS] Loaded parameters. Calibrated=%u, NavMode=%u, Kp=%.2f, Ki=%.3f, Kd=%.2f, BaseSpeed=%d\n",
+                  params.isCalibrated, params.navMode, params.kp, params.ki, params.kd, params.baseSpeed);
     Serial.printf("[NVS] Sensor L:[%u-%u, T:%u] C:[%u-%u, T:%u] R:[%u-%u, T:%u]\n",
                   params.minL, params.maxL, params.threshL,
                   params.minC, params.maxC, params.threshC,

@@ -11,7 +11,7 @@ static bool s_rebootPending = false;
 static uint32_t s_rebootTime = 0;
 
 // ============================================================================
-//  Embedded HTML / CSS / JS Portal (stored in flash PROGMEM)
+//  Embedded HTML / CSS / JS Portal (stored in flash PROGMEM, no emojis)
 // ============================================================================
 static const char INDEX_HTML[] PROGMEM = R"rawliteral(
 <!DOCTYPE html>
@@ -59,6 +59,7 @@ a{color:#6bf}
 .ind{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px;vertical-align:middle;background:#333}
 .ind.on{background:#e44}
 .ind.off{background:#3a3}
+.ind.done{background:#2a4}
 
 /* Horizontal bar */
 .hbar{height:6px;background:#222;border-radius:3px;overflow:hidden;width:100%;max-width:120px}
@@ -113,6 +114,9 @@ a{color:#6bf}
 .thresh-row .lbl{width:50px;color:#888;flex-shrink:0}
 .thresh-row input[type=range]{flex:1;accent-color:#6bf}
 .thresh-row .val{width:40px;text-align:right;font-family:'SF Mono',Consolas,monospace;color:#ccc}
+
+/* Telemetry badges */
+.stat-box{display:flex;justify-content:space-between;background:#181818;border:1px solid #222;padding:6px 8px;border-radius:3px;margin-bottom:8px;font-size:11px}
 </style>
 </head>
 <body>
@@ -135,8 +139,14 @@ a{color:#6bf}
   <div id="p-sensors" class="pane on">
     <div class="sec">
       <div class="sec-title">Live Readings &middot; <span id="robotState" class="mono" style="text-transform:none;letter-spacing:0;color:#6bf">-</span></div>
+      
+      <div class="stat-box">
+        <span>Checkpoints: <strong class="mono" id="cpCount" style="color:#eee">0</strong> / 4</span>
+        <span>Goal: <span class="ind" id="goalInd"></span><strong class="mono" id="goalTxt" style="color:#eee">Seeking</strong></span>
+      </div>
+
       <table class="s-table">
-        <tr><th></th><th>Raw</th><th>Norm</th><th>Level</th><th>Status</th></tr>
+        <tr><th>Sensor</th><th>Raw</th><th>Norm</th><th>Level</th><th>Status</th></tr>
         <tr>
           <td class="lbl">Left (34)</td>
           <td class="mono" id="rawL">-</td>
@@ -173,8 +183,8 @@ a{color:#6bf}
     </div>
 
     <div class="sec">
-      <div class="sec-title">Calibration</div>
-      <p style="font-size:12px;color:#777;margin-bottom:8px">Move the robot slowly across the line and white surface during the 10s sweep. Min/max will be recorded automatically.</p>
+      <div class="sec-title">Calibration (5-Min Setup Window)</div>
+      <p style="font-size:12px;color:#777;margin-bottom:8px">Place robot on track surface and sweep across black line and white background during the 10s window.</p>
       <button class="btn btn-act" id="btnCalib" onclick="startCalibration()">Start Calibration Sweep (10s)</button>
       <div id="calibBox">
         <span>Sweeping... <span class="mono" id="countdown">10</span>s left</span>
@@ -192,17 +202,43 @@ a{color:#6bf}
       <div style="margin-top:6px">
         <div class="sec-title" style="margin-bottom:4px">Stored Ranges</div>
         <table class="s-table" style="font-size:11px">
-          <tr><th></th><th>Min</th><th>Max</th><th>Threshold</th></tr>
+          <tr><th>Sensor</th><th>Min</th><th>Max</th><th>Threshold</th></tr>
           <tr><td class="lbl">Left</td><td class="mono" id="sMinL">-</td><td class="mono" id="sMaxL">-</td><td class="mono" id="sThL">-</td></tr>
           <tr><td class="lbl">Center</td><td class="mono" id="sMinC">-</td><td class="mono" id="sMaxC">-</td><td class="mono" id="sThC">-</td></tr>
           <tr><td class="lbl">Right</td><td class="mono" id="sMinR">-</td><td class="mono" id="sMaxR">-</td><td class="mono" id="sThR">-</td></tr>
         </table>
       </div>
+
+      <div style="margin-top:10px;border-top:1px solid #222;padding-top:8px">
+        <div class="sec-title" style="margin-bottom:4px">Rulebook Quick Reference</div>
+        <table class="rv-table" style="font-size:11px">
+          <tr><td>Bot Dimensions</td><td>25 x 25 x 25 cm max (10% tol)</td></tr>
+          <tr><td>Power Supply</td><td>Max 3S (12.6V DC)</td></tr>
+          <tr><td>Start Trigger</td><td>Single physical BOOT button (GPIO 0)</td></tr>
+          <tr><td>Line Width</td><td>30mm black line on white surface</td></tr>
+          <tr><td>Checkpoints</td><td>4 transverse line checkpoints</td></tr>
+          <tr><td>End Target</td><td>Zone B large black square</td></tr>
+          <tr><td>Max Run Time</td><td>10 minutes</td></tr>
+        </table>
+      </div>
     </div>
   </div>
 
-  <!-- PID -->
+  <!-- PID & NAVIGATION -->
   <div id="p-pid" class="pane">
+    <div class="sec">
+      <div class="sec-title">Navigation Strategy</div>
+      <div class="field">
+        <label>Routing Mode</label>
+        <select id="sel_nav">
+          <option value="1">Official Competition Map (Pre-Programmed Shortest Route)</option>
+          <option value="0">Autonomous Maze Solver (Left-Hand Rule / LSRB)</option>
+          <option value="2">Standard PID Line Follower</option>
+        </select>
+        <div class="hint" style="margin-top:4px">Official Map: Uses exact turn sequence for the Rulebook arena layout.<br>LSRB: Fully autonomous exploration for any unknown grid track.</div>
+      </div>
+    </div>
+
     <div class="sec">
       <div class="sec-title">PID Gains</div>
       <div class="field">
@@ -242,13 +278,13 @@ a{color:#6bf}
       <div class="sec-title">Line Polarity</div>
       <div class="field">
         <select id="sel_pol">
-          <option value="0">Black line on white surface</option>
+          <option value="0">Black line on white surface (Rulebook standard)</option>
           <option value="1">White line on black surface</option>
         </select>
       </div>
     </div>
 
-    <button class="btn btn-act" onclick="submitPid()">Apply PID Settings</button>
+    <button class="btn btn-act" onclick="submitPid()">Apply Settings</button>
   </div>
 
   <!-- MOTORS -->
@@ -280,7 +316,7 @@ a{color:#6bf}
       </table>
     </div>
     <button class="btn btn-act" onclick="saveAll()">Save All to NVS</button>
-    <button class="btn btn-go" onclick="saveAndRun()">Save &amp; Start LFR</button>
+    <button class="btn btn-go" onclick="saveAndRun()">Save &amp; Start LFR (Reboot to Ready State)</button>
     <button class="btn btn-reset" onclick="resetDef()">Reset to Defaults</button>
   </div>
 </div>
@@ -321,6 +357,15 @@ async function fetchS(){
     $('posVal').innerText=d.position;
     $('posDot').style.left=Math.min(Math.max(((d.position+1000)/2000)*100,0),100)+'%';
     $('robotState').innerText=d.status||'-';
+    
+    if(d.checkpoints!==undefined) $('cpCount').innerText=d.checkpoints;
+    if(d.finished){
+      $('goalInd').className='ind done';
+      $('goalTxt').innerText='COMPLETE';
+    }else{
+      $('goalInd').className='ind off';
+      $('goalTxt').innerText='Seeking';
+    }
   }catch(e){}
 }
 
@@ -376,8 +421,15 @@ async function loadParams(){
     $('rng_min').value=d.minSpeed;$('num_min').value=d.minSpeed;
     $('rng_max').value=d.maxSpeed;$('num_max').value=d.maxSpeed;
     $('sel_pol').value=d.invertLine;
+    $('sel_nav').value=d.navMode;
+
+    let navDesc = 'Official Competition Map';
+    if(d.navMode==0) navDesc = 'Autonomous LSRB Maze Solver';
+    else if(d.navMode==2) navDesc = 'Standard PID Line Follower';
+
     $('rvTable').innerHTML=
-      '<tr><td>Calibrated</td><td>'+(d.isCalibrated?'Yes':'No')+'</td></tr>'+
+      '<tr><td>Calibration</td><td>'+(d.isCalibrated?'Yes':'No')+'</td></tr>'+
+      '<tr><td>Routing Strategy</td><td>'+navDesc+'</td></tr>'+
       '<tr><td>Left range</td><td>'+d.minL+' - '+d.maxL+' (T:'+d.threshL+')</td></tr>'+
       '<tr><td>Center range</td><td>'+d.minC+' - '+d.maxC+' (T:'+d.threshC+')</td></tr>'+
       '<tr><td>Right range</td><td>'+d.minR+' - '+d.maxR+' (T:'+d.threshR+')</td></tr>'+
@@ -398,10 +450,11 @@ async function submitPid(){
   const b=new URLSearchParams({
     kp:$('rng_kp').value,ki:$('rng_ki').value,kd:$('rng_kd').value,
     baseSpeed:$('rng_base').value,minSpeed:$('rng_min').value,maxSpeed:$('rng_max').value,
-    invertLine:$('sel_pol').value
+    invertLine:$('sel_pol').value,
+    navMode:$('sel_nav').value
   });
   const r=await fetch('/api/params',{method:'POST',body:b});
-  if(r.ok){status('PID settings saved','ok');loadParams()}
+  if(r.ok){status('Settings saved','ok');loadParams()}
 }
 
 async function mt(action){
@@ -414,6 +467,7 @@ async function saveAll(){
     kp:$('rng_kp').value,ki:$('rng_ki').value,kd:$('rng_kd').value,
     baseSpeed:$('rng_base').value,minSpeed:$('rng_min').value,maxSpeed:$('rng_max').value,
     invertLine:$('sel_pol').value,
+    navMode:$('sel_nav').value,
     threshL:$('sl_thL').value,threshC:$('sl_thC').value,threshR:$('sl_thR').value
   });
   const r=await fetch('/api/params',{method:'POST',body:b});
@@ -421,7 +475,7 @@ async function saveAll(){
 }
 
 async function saveAndRun(){
-  if(!confirm('Save and reboot into line-following mode?'))return;
+  if(!confirm('Save parameters and reboot to Ready state?'))return;
   status('Rebooting...','warn');
   try{await fetch('/api/saveandrun',{method:'POST'})}catch(e){}
 }
@@ -481,7 +535,7 @@ void initWebPortal() {
     });
 
     // ------------------------------------------------------------------------
-    // API: GET /api/sensors - Live sensor telemetry
+    // API: GET /api/sensors - Live sensor telemetry & match state
     // ------------------------------------------------------------------------
     s_server.on("/api/sensors", HTTP_GET, [](AsyncWebServerRequest *request) {
         uint16_t rawL = analogRead(SENSOR_LEFT_PIN);
@@ -501,19 +555,22 @@ void initWebPortal() {
         g_pid.compute(rawL, rawC, rawR, dummyL, dummyR);
         SensorReadings sr = g_pid.getReadings();
 
-        char json[320];
+        char json[380];
         snprintf(json, sizeof(json),
                  "{\"raw\":{\"l\":%u,\"c\":%u,\"r\":%u},"
                  "\"norm\":{\"l\":%u,\"c\":%u,\"r\":%u},"
                  "\"on_line\":{\"l\":%s,\"c\":%s,\"r\":%s},"
-                 "\"position\":%d,\"status\":\"%s\"}",
+                 "\"position\":%d,\"status\":\"%s\","
+                 "\"checkpoints\":%u,\"finished\":%s}",
                  sr.rawL, sr.rawC, sr.rawR,
                  sr.normL, sr.normC, sr.normR,
                  sr.onLineL ? "true" : "false",
                  sr.onLineC ? "true" : "false",
                  sr.onLineR ? "true" : "false",
                  sr.position,
-                 PIDController::statusToString(sr.status));
+                 PIDController::statusToString(sr.status),
+                 sr.checkpoints,
+                 sr.runFinished ? "true" : "false");
 
         request->send(200, "application/json", json);
     });
@@ -522,7 +579,7 @@ void initWebPortal() {
     // API: GET /api/params - Stored configuration
     // ------------------------------------------------------------------------
     s_server.on("/api/params", HTTP_GET, [](AsyncWebServerRequest *request) {
-        char json[420];
+        char json[450];
         snprintf(json, sizeof(json),
                  "{\"isCalibrated\":%u,"
                  "\"minL\":%u,\"maxL\":%u,\"threshL\":%u,"
@@ -530,14 +587,14 @@ void initWebPortal() {
                  "\"minR\":%u,\"maxR\":%u,\"threshR\":%u,"
                  "\"kp\":%.2f,\"ki\":%.3f,\"kd\":%.2f,"
                  "\"baseSpeed\":%d,\"minSpeed\":%d,\"maxSpeed\":%d,"
-                 "\"invertLine\":%u,\"bootCount\":%u}",
+                 "\"invertLine\":%u,\"navMode\":%u,\"bootCount\":%u}",
                  g_params.isCalibrated,
                  g_params.minL, g_params.maxL, g_params.threshL,
                  g_params.minC, g_params.maxC, g_params.threshC,
                  g_params.minR, g_params.maxR, g_params.threshR,
                  g_params.kp, g_params.ki, g_params.kd,
                  g_params.baseSpeed, g_params.minSpeed, g_params.maxSpeed,
-                 g_params.invertLine, getBootCount());
+                 g_params.invertLine, g_params.navMode, getBootCount());
 
         request->send(200, "application/json", json);
     });
@@ -584,6 +641,7 @@ void initWebPortal() {
         if (request->hasParam("maxSpeed", true)) g_params.maxSpeed = request->getParam("maxSpeed", true)->value().toInt();
 
         if (request->hasParam("invertLine", true)) g_params.invertLine = request->getParam("invertLine", true)->value().toInt();
+        if (request->hasParam("navMode", true)) g_params.navMode = request->getParam("navMode", true)->value().toInt();
 
         if (request->hasParam("threshL", true)) g_params.threshL = request->getParam("threshL", true)->value().toInt();
         if (request->hasParam("threshC", true)) g_params.threshC = request->getParam("threshC", true)->value().toInt();
@@ -645,7 +703,7 @@ void initWebPortal() {
         s_rebootPending = true;
         s_rebootTime = millis() + 1000;
 
-        request->send(200, "application/json", "{\"success\":true,\"message\":\"Rebooting into Running Mode...\"}");
+        request->send(200, "application/json", "{\"success\":true,\"message\":\"Rebooting into Ready State...\"}");
     });
 
     // Catch-all 404 handler for Captive Portal redirection

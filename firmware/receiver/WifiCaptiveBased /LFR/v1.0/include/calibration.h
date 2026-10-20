@@ -4,7 +4,7 @@
 #include "config.h"
 
 // Magic number to verify valid parameter block in NVS
-#define PARAMS_MAGIC 0x4C465231 // "LFR1"
+#define PARAMS_MAGIC 0x4C465232 // "LFR2"
 
 struct RobotParameters {
     uint32_t magic;
@@ -35,6 +35,12 @@ struct RobotParameters {
 
     // 0 = Black line on white surface, 1 = White line on black surface
     uint8_t invertLine;
+
+    // Navigation Strategy:
+    // 0 = LSRB Maze Solver (Left Hand Rule: Left > Straight > Right > Back)
+    // 1 = Competition Map (Pre-programmed sequence for the official rulebook map)
+    // 2 = Standard PID Line Follower
+    uint8_t navMode;
 };
 
 // Global parameters instance

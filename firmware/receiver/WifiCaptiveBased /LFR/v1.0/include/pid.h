@@ -6,12 +6,24 @@
 
 enum LineStatus {
     LINE_ON_TRACK = 0,
-    LINE_INTERSECTION,
-    LINE_SHARP_LEFT,
-    LINE_SHARP_RIGHT,
-    LINE_RECOVERY,
-    LINE_LOST_SEARCHING,
-    LINE_LOST_STOPPED
+    LINE_INTERSECTION,      // 4-way, T-junction, or crossline
+    LINE_SHARP_LEFT,        // 90-degree left turn
+    LINE_SHARP_RIGHT,       // 90-degree right turn
+    LINE_DEAD_END,          // Dead end (U-turn required)
+    LINE_CHECKPOINT,        // Transverse checkpoint passed
+    LINE_END_ZONE,          // Reached Zone B large black square!
+    LINE_TURNING,           // Active pivot turn in progress
+    LINE_RECOVERY,          // Line lost recovery
+    LINE_LOST_STOPPED,      // Stopped after extended loss
+    LINE_FINISHED           // Run complete and stopped
+};
+
+enum TurnAction {
+    TURN_NONE = 0,
+    TURN_LEFT_90,
+    TURN_RIGHT_90,
+    TURN_UTURN_180,
+    TURN_STRAIGHT
 };
 
 struct SensorReadings {
@@ -29,6 +41,9 @@ struct SensorReadings {
     
     int16_t position;      // -1000 (far left) to +1000 (far right)
     LineStatus status;
+    uint8_t checkpoints;   // Count of checkpoints passed (up to 4)
+    uint8_t junctionIndex; // Progress in official map turn sequence
+    bool runFinished;
 };
 
 class PIDController {
@@ -49,6 +64,12 @@ public:
     // Get current telemetry / readings snapshot
     SensorReadings getReadings() const;
 
+    // Check if run is finished (Zone B reached)
+    bool isFinished() const;
+
+    // Execute in-place turn (blocking helper for clean 90-deg or 180-deg turns)
+    void executeTurn(TurnAction action);
+
     // Helper to get string description of line status
     static const char* statusToString(LineStatus st);
 
@@ -62,6 +83,12 @@ private:
     
     uint32_t m_lineLostStartTime;
     bool m_wasLineLost;
+    uint32_t m_lastCheckpointTime;
+    uint32_t m_allBlackStartTime;
+    bool m_allBlackCandidate;
+
+    // Navigation decision helper
+    TurnAction decideTurnAtJunction(bool canLeft, bool canStraight, bool canRight);
 };
 
 extern PIDController g_pid;
