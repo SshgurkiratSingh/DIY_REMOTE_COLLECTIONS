@@ -10,7 +10,8 @@ An ESP32-based RC remote control collection centred around an ESP-NOW handheld t
 
 | Version | Path | Notes |
 |---------|------|-------|
-| **v2.0** ⭐ | `firmware/transmitter/esp-now-oled/v2.0` | Current production version. Packed `struct_message`, `addrLedMode` for addressable LED control, pairing keys, haptic/buzzer feedback, 11-item settings menu. |
+| **v2.1** ⭐ | `firmware/transmitter/esp-now-oled/v2.1` | Modern v2.0 engine + backwards-compatible v1.3 configuration (standard 10-byte payload, broadcast out-of-the-box). |
+| **v2.0** | `firmware/transmitter/esp-now-oled/v2.0` | Packed 12-byte payload, `addrLedMode` for addressable LED control, pairing keys (`verifyKey`), 11-item settings menu. |
 | v1.3 | `firmware/transmitter/esp-now-oled/v1.3` | Pre-release v2.0 |
 | v1.2 | `firmware/transmitter/esp-now-oled/v1.2` | EMA filter, captive portal, NVS persistence |
 | v1.1 | `firmware/transmitter/esp-now-oled/v1.1` | Older OLED iteration |
