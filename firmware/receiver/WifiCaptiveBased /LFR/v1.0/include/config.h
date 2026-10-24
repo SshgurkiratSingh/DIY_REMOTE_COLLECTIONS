@@ -14,10 +14,45 @@
 #define IN3_PIN                 12   // Direction control 1 for Right Motor
 #define IN4_PIN                 13   // Direction control 2 for Right Motor
 
-// Analog IR Sensors (ESP32 ADC1 channels - safe with active WiFi)
-#define SENSOR_LEFT_PIN         34   // ADC1_CH6
-#define SENSOR_CENTER_PIN       35   // ADC1_CH7
-#define SENSOR_RIGHT_PIN        36   // ADC1_CH0
+// 9-Channel Analog IR Sensor Array
+//
+// Layout (robot's perspective, left to right):
+//   S0    S1    S2    S3    S4    S5  | S6    S7    S8
+//  [FL]  [L]  [CL]  [C]  [CR]  [R]  | [FR] [FFL] [FFR]
+//
+// ADC1 sensors (GPIO 32-39) — safe when WiFi is active (Calibration mode)
+// ADC2 sensors (GPIO 2/4/15)— ONLY safe when WiFi is OFF (Running mode only)
+//
+#define NUM_SENSORS             9
+#define ADC1_SENSOR_COUNT       6    // S0-S5: readable during calibration (WiFi on)
+#define ADC2_SENSOR_COUNT       3    // S6-S8: only readable during running (WiFi off)
+
+// ADC1 sensors — positions: Far-Left to Right
+#define SENSOR_S0_PIN           39   // ADC1_CH3  Far Left        (WiFi-safe)
+#define SENSOR_S1_PIN           36   // ADC1_CH0  Left            (WiFi-safe)
+#define SENSOR_S2_PIN           35   // ADC1_CH7  Centre-Left     (WiFi-safe)
+#define SENSOR_S3_PIN           34   // ADC1_CH6  Centre          (WiFi-safe)
+#define SENSOR_S4_PIN           33   // ADC1_CH5  Centre-Right    (WiFi-safe)
+#define SENSOR_S5_PIN           32   // ADC1_CH4  Right           (WiFi-safe)
+
+// ADC2 sensors — positions: Far-Right extension
+// WARNING: These return garbage/errors while WiFi radio is active.
+//          They are ONLY read in MODE_RUNNING (WiFi is fully OFF).
+//          GPIO2 doubles as STATUS_LED in calibration mode; that's fine because
+//          in running mode the LED is simply left LOW and GPIO2 is used as ADC.
+#define SENSOR_S6_PIN           4    // ADC2_CH0  Far Right       (running-only)
+#define SENSOR_S7_PIN           15   // ADC2_CH3  Far-Far Right   (running-only)
+#define SENSOR_S8_PIN           2    // ADC2_CH2  Outer Right     (running-only, shares STATUS_LED)
+
+// Weights for each sensor in the position calculation
+// Range: -4000 (S0 far-left) to +4000 (S8 far-right), step 1000
+// Position = sum(weight[i] * norm[i]) / sum(norm[i])
+#define SENSOR_WEIGHTS          {-4000, -3000, -1500, 0, 1500, 3000, 4000, 5000, 6000}
+
+// Legacy aliases (kept for compatibility with turn detection in pid.cpp)
+#define SENSOR_LEFT_PIN         SENSOR_S1_PIN
+#define SENSOR_CENTER_PIN       SENSOR_S3_PIN
+#define SENSOR_RIGHT_PIN        SENSOR_S5_PIN
 
 // Indicators & Buttons
 #define STATUS_LED_PIN          2    // Built-in status LED

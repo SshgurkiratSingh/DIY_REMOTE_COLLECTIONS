@@ -27,24 +27,27 @@ enum TurnAction {
 };
 
 struct SensorReadings {
-    uint16_t rawL;
-    uint16_t rawC;
-    uint16_t rawR;
-    
-    uint16_t normL;
-    uint16_t normC;
-    uint16_t normR;
-    
-    bool onLineL;
-    bool onLineC;
-    bool onLineR;
-    
-    int16_t position;      // -1000 (far left) to +1000 (far right)
+    uint16_t raw[NUM_SENSORS];
+    uint16_t norm[NUM_SENSORS];
+    bool     onLine[NUM_SENSORS];
+
+    int16_t    position;       // Weighted position: negative = left, positive = right
     LineStatus status;
-    uint8_t checkpoints;   // Count of checkpoints passed (up to 4)
-    uint8_t junctionIndex; // Progress in custom/map turn sequence
-    bool runFinished;
-    char solvedPath[MAX_PATH_STEPS]; // Simplified shortest path discovered
+    uint8_t    checkpoints;    // Count of checkpoints passed
+    uint8_t    junctionIndex;  // Progress in custom/map turn sequence
+    bool       runFinished;
+    char       solvedPath[MAX_PATH_STEPS]; // Simplified shortest path discovered
+
+    // Legacy 3-sensor convenience aliases (used by turn detection helpers)
+    uint16_t rawL()  const { return raw[1];  }
+    uint16_t rawC()  const { return raw[3];  }
+    uint16_t rawR()  const { return raw[5];  }
+    uint16_t normL() const { return norm[1]; }
+    uint16_t normC() const { return norm[3]; }
+    uint16_t normR() const { return norm[5]; }
+    bool onLineL()   const { return onLine[1]; }
+    bool onLineC()   const { return onLine[3]; }
+    bool onLineR()   const { return onLine[5]; }
 };
 
 class PIDController {
@@ -55,8 +58,10 @@ public:
     void updateParams(const RobotParameters& params);
     void reset();
 
-    // Read sensors and compute motor speeds (leftSpeed, rightSpeed)
-    void compute(uint16_t rawL, uint16_t rawC, uint16_t rawR,
+    // Read sensors and compute motor speeds.
+    // raw[NUM_SENSORS]: raw ADC readings for all sensors.
+    // activeSensors: how many sensors are valid (6 during calibration/WiFi-on, 9 during running).
+    void compute(const uint16_t raw[NUM_SENSORS], uint8_t activeSensors,
                  int16_t& outLeftSpeed, int16_t& outRightSpeed);
 
     // Normalize raw reading based on calibration parameters

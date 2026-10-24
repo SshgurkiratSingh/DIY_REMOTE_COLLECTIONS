@@ -4,17 +4,15 @@
 RobotParameters g_params;
 
 static Preferences s_prefs;
-static bool s_calibrating = false;
+static bool     s_calibrating    = false;
 static uint32_t s_calibStartTime = 0;
-static uint32_t s_calibDuration = CALIBRATION_DURATION_MS;
+static uint32_t s_calibDuration  = CALIBRATION_DURATION_MS;
 
-static uint16_t s_sweepMinL = 4095;
-static uint16_t s_sweepMaxL = 0;
-static uint16_t s_sweepMinC = 4095;
-static uint16_t s_sweepMaxC = 0;
-static uint16_t s_sweepMinR = 4095;
-static uint16_t s_sweepMaxR = 0;
+// Per-sensor sweep accumulators
+static uint16_t s_sweepMin[NUM_SENSORS];
+static uint16_t s_sweepMax[NUM_SENSORS];
 
+// ---------------------------------------------------------------------------
 void initPreferences() {
     s_prefs.begin(PREFERENCES_NAMESPACE, false);
 }
@@ -37,59 +35,55 @@ void resetBootCount() {
 }
 
 void forceCalibrationNextBoot() {
-    // Set to 4 so next boot increments to 5 (or interval) and triggers calibration
+    // Set to (interval - 1) so next boot increments to the trigger value
     s_prefs.putUInt("boot_count", CALIBRATION_BOOT_INTERVAL - 1);
     Serial.println("[NVS] Calibration scheduled for next boot.");
 }
 
+// ---------------------------------------------------------------------------
 void resetParametersToDefaults(RobotParameters& params) {
-    params.magic = PARAMS_MAGIC;
+    params.magic        = PARAMS_MAGIC;
     params.isCalibrated = 0;
 
-    params.minL = DEFAULT_RAW_MIN;
-    params.maxL = DEFAULT_RAW_MAX;
-    params.threshL = (DEFAULT_RAW_MIN + DEFAULT_RAW_MAX) / 2;
+    for (int i = 0; i < NUM_SENSORS; i++) {
+        params.sensors[i].minVal = DEFAULT_RAW_MIN;
+        params.sensors[i].maxVal = DEFAULT_RAW_MAX;
+        params.sensors[i].thresh = (DEFAULT_RAW_MIN + DEFAULT_RAW_MAX) / 2;
+    }
 
-    params.minC = DEFAULT_RAW_MIN;
-    params.maxC = DEFAULT_RAW_MAX;
-    params.threshC = (DEFAULT_RAW_MIN + DEFAULT_RAW_MAX) / 2;
-
-    params.minR = DEFAULT_RAW_MIN;
-    params.maxR = DEFAULT_RAW_MAX;
-    params.threshR = (DEFAULT_RAW_MIN + DEFAULT_RAW_MAX) / 2;
-
-    params.kp = DEFAULT_KP;
-    params.ki = DEFAULT_KI;
-    params.kd = DEFAULT_KD;
+    params.kp        = DEFAULT_KP;
+    params.ki        = DEFAULT_KI;
+    params.kd        = DEFAULT_KD;
 
     params.baseSpeed = DEFAULT_BASE_SPEED;
-    params.minSpeed = DEFAULT_MIN_SPEED;
-    params.maxSpeed = DEFAULT_MAX_SPEED;
+    params.minSpeed  = DEFAULT_MIN_SPEED;
+    params.maxSpeed  = DEFAULT_MAX_SPEED;
 
-    params.invertLine = 0; // Black line on white surface default
-    params.navMode = DEFAULT_NAV_MODE;
+    params.invertLine = 0;  // Black line on white surface
+    params.navMode    = DEFAULT_NAV_MODE;
     strncpy(params.customPath, DEFAULT_RULEBOOK_ROUTE, sizeof(params.customPath) - 1);
     params.customPath[sizeof(params.customPath) - 1] = '\0';
 
     Serial.println("[NVS] Parameters reset to factory defaults");
 }
 
+// ---------------------------------------------------------------------------
 bool isCalibrationValid(const RobotParameters& params) {
     if (params.magic != PARAMS_MAGIC) return false;
-    if (params.isCalibrated == 0) return false;
-    
-    // Check reasonable difference between min and max
-    if (params.maxL <= params.minL + 150) return false;
-    if (params.maxC <= params.minC + 150) return false;
-    if (params.maxR <= params.minR + 150) return false;
-    
+    if (params.isCalibrated == 0)     return false;
+
+    // Check that the ADC1 sensors (S0-S5) have a meaningful range
+    for (int i = 0; i < ADC1_SENSOR_COUNT; i++) {
+        if (params.sensors[i].maxVal <= params.sensors[i].minVal + 150) return false;
+    }
     return true;
 }
 
+// ---------------------------------------------------------------------------
 bool loadParameters(RobotParameters& params) {
     size_t len = sizeof(RobotParameters);
     if (!s_prefs.isKey("params")) {
-        Serial.println("[NVS] No parameters found. Initializing defaults...");
+        Serial.println("[NVS] No parameters found. Initialising defaults...");
         resetParametersToDefaults(params);
         saveParameters(params);
         return false;
@@ -97,65 +91,73 @@ bool loadParameters(RobotParameters& params) {
 
     size_t readBytes = s_prefs.getBytes("params", &params, len);
     if (readBytes != len || params.magic != PARAMS_MAGIC) {
-        Serial.println("[NVS] Parameters corrupted or invalid magic. Resetting...");
+        Serial.println("[NVS] Parameters corrupted or wrong magic. Resetting...");
         resetParametersToDefaults(params);
         saveParameters(params);
         return false;
     }
 
-    Serial.printf("[NVS] Loaded parameters. Calibrated=%u, NavMode=%u, Route='%s', Kp=%.2f, Ki=%.3f, Kd=%.2f, BaseSpeed=%d\n",
-                  params.isCalibrated, params.navMode, params.customPath, params.kp, params.ki, params.kd, params.baseSpeed);
-    Serial.printf("[NVS] Sensor L:[%u-%u, T:%u] C:[%u-%u, T:%u] R:[%u-%u, T:%u]\n",
-                  params.minL, params.maxL, params.threshL,
-                  params.minC, params.maxC, params.threshC,
-                  params.minR, params.maxR, params.threshR);
+    Serial.printf("[NVS] Loaded. Calibrated=%u NavMode=%u Route='%s' Kp=%.2f Ki=%.3f Kd=%.2f Base=%d\n",
+                  params.isCalibrated, params.navMode, params.customPath,
+                  params.kp, params.ki, params.kd, params.baseSpeed);
+    for (int i = 0; i < NUM_SENSORS; i++) {
+        Serial.printf("[NVS]   S%d pin=%-2d min=%-4u max=%-4u thresh=%-4u  (%s)\n",
+                      i, 0 /*pin lookup done in config.h*/,
+                      params.sensors[i].minVal,
+                      params.sensors[i].maxVal,
+                      params.sensors[i].thresh,
+                      i < ADC1_SENSOR_COUNT ? "ADC1-WiFi-safe" : "ADC2-run-only");
+    }
     return true;
 }
 
+// ---------------------------------------------------------------------------
 bool saveParameters(const RobotParameters& params) {
-    size_t len = sizeof(RobotParameters);
+    size_t len     = sizeof(RobotParameters);
     size_t written = s_prefs.putBytes("params", &params, len);
     if (written == len) {
-        Serial.println("[NVS] Parameters successfully saved to NVS.");
+        Serial.println("[NVS] Parameters saved.");
         return true;
-    } else {
-        Serial.printf("[NVS] ERROR saving parameters! Written: %u / Expected: %u\n", (unsigned int)written, (unsigned int)len);
-        return false;
     }
+    Serial.printf("[NVS] ERROR saving parameters! written=%u expected=%u\n",
+                  (unsigned)written, (unsigned)len);
+    return false;
 }
 
+// ---------------------------------------------------------------------------
+//  Calibration Sweep state machine
+// ---------------------------------------------------------------------------
 void startCalibration(uint32_t durationMs) {
-    s_calibDuration = durationMs;
+    s_calibDuration  = durationMs;
     s_calibStartTime = millis();
-    s_calibrating = true;
+    s_calibrating    = true;
 
-    // Seed min/max
-    s_sweepMinL = 4095;
-    s_sweepMaxL = 0;
-    s_sweepMinC = 4095;
-    s_sweepMaxC = 0;
-    s_sweepMinR = 4095;
-    s_sweepMaxR = 0;
+    for (int i = 0; i < NUM_SENSORS; i++) {
+        s_sweepMin[i] = 4095;
+        s_sweepMax[i] = 0;
+    }
 
-    Serial.printf("[CALIB] Started calibration sweep for %u ms...\n", (unsigned int)durationMs);
+    Serial.printf("[CALIB] Sweep started. Duration=%u ms. ADC2 sensors (S6-S8) "
+                  "excluded during WiFi-active calibration.\n", (unsigned)durationMs);
 }
 
-void updateCalibration(uint16_t rawL, uint16_t rawC, uint16_t rawR) {
+// raw[NUM_SENSORS]: caller provides readings for every sensor each tick.
+// adc2Available=false  => skip indices 6-8 (WiFi active, ADC2 unusable).
+// adc2Available=true   => include all 9 (running mode or WiFi disabled).
+void updateCalibration(const uint16_t raw[NUM_SENSORS], bool adc2Available) {
     if (!s_calibrating) return;
 
-    if (rawL < s_sweepMinL) s_sweepMinL = rawL;
-    if (rawL > s_sweepMaxL) s_sweepMaxL = rawL;
+    int limit = adc2Available ? NUM_SENSORS : ADC1_SENSOR_COUNT;
 
-    if (rawC < s_sweepMinC) s_sweepMinC = rawC;
-    if (rawC > s_sweepMaxC) s_sweepMaxC = rawC;
-
-    if (rawR < s_sweepMinR) s_sweepMinR = rawR;
-    if (rawR > s_sweepMaxR) s_sweepMaxR = rawR;
+    for (int i = 0; i < limit; i++) {
+        if (raw[i] < s_sweepMin[i]) s_sweepMin[i] = raw[i];
+        if (raw[i] > s_sweepMax[i]) s_sweepMax[i] = raw[i];
+    }
 
     if (millis() - s_calibStartTime >= s_calibDuration) {
         applyCalibrationSweep(g_params);
         s_calibrating = false;
-        Serial.println("[CALIB] Calibration sweep completed and applied.");
+        Serial.println("[CALIB] Sweep complete.");
     }
 }
 
@@ -177,32 +179,37 @@ uint8_t getCalibrationProgressPct() {
     return (uint8_t)((elapsed * 100) / s_calibDuration);
 }
 
-void getCalibrationSweepValues(uint16_t& minL, uint16_t& maxL,
-                               uint16_t& minC, uint16_t& maxC,
-                               uint16_t& minR, uint16_t& maxR) {
-    minL = s_sweepMinL;
-    maxL = s_sweepMaxL;
-    minC = s_sweepMinC;
-    maxC = s_sweepMaxC;
-    minR = s_sweepMinR;
-    maxR = s_sweepMaxR;
+void getCalibrationSweepValues(uint16_t minOut[NUM_SENSORS],
+                               uint16_t maxOut[NUM_SENSORS]) {
+    for (int i = 0; i < NUM_SENSORS; i++) {
+        minOut[i] = s_sweepMin[i];
+        maxOut[i] = s_sweepMax[i];
+    }
 }
 
+// ---------------------------------------------------------------------------
+//  Apply sweep results into params.
+//  ADC2 sensors (S6-S8): if not swept, copy from the nearest ADC1 neighbour
+//  (S5) as a safe default so the robot can still run.
+// ---------------------------------------------------------------------------
 void applyCalibrationSweep(RobotParameters& params) {
-    if (s_sweepMaxL > s_sweepMinL) {
-        params.minL = s_sweepMinL;
-        params.maxL = s_sweepMaxL;
-        params.threshL = (s_sweepMinL + s_sweepMaxL) / 2;
-    }
-    if (s_sweepMaxC > s_sweepMinC) {
-        params.minC = s_sweepMinC;
-        params.maxC = s_sweepMaxC;
-        params.threshC = (s_sweepMinC + s_sweepMaxC) / 2;
-    }
-    if (s_sweepMaxR > s_sweepMinR) {
-        params.minR = s_sweepMinR;
-        params.maxR = s_sweepMaxR;
-        params.threshR = (s_sweepMinR + s_sweepMaxR) / 2;
+    for (int i = 0; i < NUM_SENSORS; i++) {
+        if (s_sweepMax[i] > s_sweepMin[i]) {
+            // Sensor was swept successfully
+            params.sensors[i].minVal = s_sweepMin[i];
+            params.sensors[i].maxVal = s_sweepMax[i];
+            params.sensors[i].thresh = (s_sweepMin[i] + s_sweepMax[i]) / 2;
+            Serial.printf("[CALIB] S%d: min=%u max=%u thresh=%u\n",
+                          i, s_sweepMin[i], s_sweepMax[i],
+                          params.sensors[i].thresh);
+        } else if (i >= ADC1_SENSOR_COUNT) {
+            // ADC2 sensor — not swept. Mirror from S5 (last ADC1 sensor).
+            params.sensors[i].minVal = params.sensors[ADC1_SENSOR_COUNT - 1].minVal;
+            params.sensors[i].maxVal = params.sensors[ADC1_SENSOR_COUNT - 1].maxVal;
+            params.sensors[i].thresh = params.sensors[ADC1_SENSOR_COUNT - 1].thresh;
+            Serial.printf("[CALIB] S%d (ADC2, not swept): mirrored from S%d\n",
+                          i, ADC1_SENSOR_COUNT - 1);
+        }
     }
 
     params.isCalibrated = 1;

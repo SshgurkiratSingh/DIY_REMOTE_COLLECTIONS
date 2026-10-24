@@ -111,7 +111,7 @@ a{color:#6bf}
 
 /* Threshold inputs */
 .thresh-row{display:flex;align-items:center;gap:6px;margin-bottom:6px;font-size:12px}
-.thresh-row .lbl{width:50px;color:#888;flex-shrink:0}
+.thresh-row .lbl{width:80px;color:#888;flex-shrink:0}
 .thresh-row input[type=range]{flex:1;accent-color:#6bf}
 .thresh-row .val{width:40px;text-align:right;font-family:'SF Mono',Consolas,monospace;color:#ccc}
 
@@ -149,29 +149,18 @@ a{color:#6bf}
       </div>
 
       <table class="s-table">
-        <tr><th>Sensor</th><th>Raw</th><th>Norm</th><th>Level</th><th>Status</th></tr>
-        <tr>
-          <td class="lbl">Left (34)</td>
-          <td class="mono" id="rawL">-</td>
-          <td><div class="hbar"><div class="hbar-fill" id="barL"></div></div></td>
-          <td class="mono" id="normL">-</td>
-          <td><span class="ind" id="indL"></span><span id="stL" style="font-size:11px">-</span></td>
-        </tr>
-        <tr>
-          <td class="lbl">Center (35)</td>
-          <td class="mono" id="rawC">-</td>
-          <td><div class="hbar"><div class="hbar-fill" id="barC"></div></div></td>
-          <td class="mono" id="normC">-</td>
-          <td><span class="ind" id="indC"></span><span id="stC" style="font-size:11px">-</span></td>
-        </tr>
-        <tr>
-          <td class="lbl">Right (36)</td>
-          <td class="mono" id="rawR">-</td>
-          <td><div class="hbar"><div class="hbar-fill" id="barR"></div></div></td>
-          <td class="mono" id="normR">-</td>
-          <td><span class="ind" id="indR"></span><span id="stR" style="font-size:11px">-</span></td>
-        </tr>
+        <tr><th>Sensor (GPIO)</th><th>Raw</th><th>Level</th><th>Norm</th><th>On Line</th></tr>
+        <tr><td class="lbl">S0 - Far Left (39)</td><td class="mono" id="raw0">-</td><td><div class="hbar"><div class="hbar-fill" id="bar0"></div></div></td><td class="mono" id="norm0">-</td><td><span class="ind" id="ind0"></span></td></tr>
+        <tr><td class="lbl">S1 - Left (36)</td><td class="mono" id="raw1">-</td><td><div class="hbar"><div class="hbar-fill" id="bar1"></div></div></td><td class="mono" id="norm1">-</td><td><span class="ind" id="ind1"></span></td></tr>
+        <tr><td class="lbl">S2 - Centre-Left (35)</td><td class="mono" id="raw2">-</td><td><div class="hbar"><div class="hbar-fill" id="bar2"></div></div></td><td class="mono" id="norm2">-</td><td><span class="ind" id="ind2"></span></td></tr>
+        <tr><td class="lbl">S3 - Centre (34)</td><td class="mono" id="raw3">-</td><td><div class="hbar"><div class="hbar-fill" id="bar3"></div></div></td><td class="mono" id="norm3">-</td><td><span class="ind" id="ind3"></span></td></tr>
+        <tr><td class="lbl">S4 - Centre-Right (33)</td><td class="mono" id="raw4">-</td><td><div class="hbar"><div class="hbar-fill" id="bar4"></div></div></td><td class="mono" id="norm4">-</td><td><span class="ind" id="ind4"></span></td></tr>
+        <tr><td class="lbl">S5 - Right (32)</td><td class="mono" id="raw5">-</td><td><div class="hbar"><div class="hbar-fill" id="bar5"></div></div></td><td class="mono" id="norm5">-</td><td><span class="ind" id="ind5"></span></td></tr>
+        <tr style="opacity:0.55"><td class="lbl">S6 - Far Right (4) ADC2</td><td class="mono" id="raw6">0*</td><td><div class="hbar"><div class="hbar-fill" id="bar6"></div></div></td><td class="mono" id="norm6">0*</td><td><span class="ind" id="ind6"></span></td></tr>
+        <tr style="opacity:0.55"><td class="lbl">S7 - Far-Far Right (15) ADC2</td><td class="mono" id="raw7">0*</td><td><div class="hbar"><div class="hbar-fill" id="bar7"></div></div></td><td class="mono" id="norm7">0*</td><td><span class="ind" id="ind7"></span></td></tr>
+        <tr style="opacity:0.55"><td class="lbl">S8 - Outer Right (2) ADC2</td><td class="mono" id="raw8">0*</td><td><div class="hbar"><div class="hbar-fill" id="bar8"></div></div></td><td class="mono" id="norm8">0*</td><td><span class="ind" id="ind8"></span></td></tr>
       </table>
+      <div style="font-size:10px;color:#555;margin-top:2px">* S6-S8 (ADC2) read 0 during calibration mode. They are fully active in running mode (WiFi off).</div>
 
       <div class="pos-wrap">
         <div class="pos-row">
@@ -186,8 +175,8 @@ a{color:#6bf}
     </div>
 
     <div class="sec">
-      <div class="sec-title">Calibration (5-Min Setup Window)</div>
-      <p style="font-size:12px;color:#777;margin-bottom:8px">Place robot on track surface and sweep across black line and white background during the 10s window.</p>
+      <div class="sec-title">Calibration (ADC1 sensors S0-S5 only)</div>
+      <p style="font-size:12px;color:#777;margin-bottom:8px">Sweep robot across black line and white surface during the 10s window. ADC2 sensors (S6-S8) will inherit S5 thresholds as a default.</p>
       <button class="btn btn-act" id="btnCalib" onclick="startCalibration()">Start Calibration Sweep (10s)</button>
       <div id="calibBox">
         <span>Sweeping... <span class="mono" id="countdown">10</span>s left</span>
@@ -195,20 +184,24 @@ a{color:#6bf}
       </div>
 
       <div style="margin-top:10px">
-        <div class="sec-title" style="margin-bottom:6px">Threshold Overrides</div>
-        <div class="thresh-row"><span class="lbl">Left</span><input type="range" min="0" max="4095" id="sl_thL" oninput="thl('L')"><span class="val" id="vl_thL">-</span></div>
-        <div class="thresh-row"><span class="lbl">Center</span><input type="range" min="0" max="4095" id="sl_thC" oninput="thl('C')"><span class="val" id="vl_thC">-</span></div>
-        <div class="thresh-row"><span class="lbl">Right</span><input type="range" min="0" max="4095" id="sl_thR" oninput="thl('R')"><span class="val" id="vl_thR">-</span></div>
+        <div class="sec-title" style="margin-bottom:6px">Threshold Overrides (all 9 sensors)</div>
+        <div id="threshSliders"></div>
         <button class="btn" onclick="applyThresholds()">Apply Thresholds</button>
       </div>
 
       <div style="margin-top:6px">
         <div class="sec-title" style="margin-bottom:4px">Stored Ranges</div>
         <table class="s-table" style="font-size:11px">
-          <tr><th>Sensor</th><th>Min</th><th>Max</th><th>Threshold</th></tr>
-          <tr><td class="lbl">Left</td><td class="mono" id="sMinL">-</td><td class="mono" id="sMaxL">-</td><td class="mono" id="sThL">-</td></tr>
-          <tr><td class="lbl">Center</td><td class="mono" id="sMinC">-</td><td class="mono" id="sMaxC">-</td><td class="mono" id="sThC">-</td></tr>
-          <tr><td class="lbl">Right</td><td class="mono" id="sMinR">-</td><td class="mono" id="sMaxR">-</td><td class="mono" id="sThR">-</td></tr>
+          <tr><th>Sensor</th><th>Min</th><th>Max</th><th>Thresh</th></tr>
+          <tr><td class="lbl">S0 FL(39)</td><td class="mono" id="sMin0">-</td><td class="mono" id="sMax0">-</td><td class="mono" id="sTh0">-</td></tr>
+          <tr><td class="lbl">S1 L(36)</td><td class="mono" id="sMin1">-</td><td class="mono" id="sMax1">-</td><td class="mono" id="sTh1">-</td></tr>
+          <tr><td class="lbl">S2 CL(35)</td><td class="mono" id="sMin2">-</td><td class="mono" id="sMax2">-</td><td class="mono" id="sTh2">-</td></tr>
+          <tr><td class="lbl">S3 C(34)</td><td class="mono" id="sMin3">-</td><td class="mono" id="sMax3">-</td><td class="mono" id="sTh3">-</td></tr>
+          <tr><td class="lbl">S4 CR(33)</td><td class="mono" id="sMin4">-</td><td class="mono" id="sMax4">-</td><td class="mono" id="sTh4">-</td></tr>
+          <tr><td class="lbl">S5 R(32)</td><td class="mono" id="sMin5">-</td><td class="mono" id="sMax5">-</td><td class="mono" id="sTh5">-</td></tr>
+          <tr style="opacity:0.6"><td class="lbl">S6 FR(4)*</td><td class="mono" id="sMin6">-</td><td class="mono" id="sMax6">-</td><td class="mono" id="sTh6">-</td></tr>
+          <tr style="opacity:0.6"><td class="lbl">S7 FFR(15)*</td><td class="mono" id="sMin7">-</td><td class="mono" id="sMax7">-</td><td class="mono" id="sTh7">-</td></tr>
+          <tr style="opacity:0.6"><td class="lbl">S8 OR(2)*</td><td class="mono" id="sMin8">-</td><td class="mono" id="sMax8">-</td><td class="mono" id="sTh8">-</td></tr>
         </table>
       </div>
 
@@ -364,12 +357,18 @@ async function fetchS(){
     const r=await fetch('/api/sensors');
     if(!r.ok)return;
     const d=await r.json();
-    $('rawL').innerText=d.raw.l;$('rawC').innerText=d.raw.c;$('rawR').innerText=d.raw.r;
-    $('normL').innerText=d.norm.l;$('normC').innerText=d.norm.c;$('normR').innerText=d.norm.r;
-    $('barL').style.width=(d.norm.l/10)+'%';$('barC').style.width=(d.norm.c/10)+'%';$('barR').style.width=(d.norm.r/10)+'%';
-    setInd('L',d.on_line.l);setInd('C',d.on_line.c);setInd('R',d.on_line.r);
+    for(let i=0;i<9;i++){
+      const rawEl=$('raw'+i),normEl=$('norm'+i),barEl=$('bar'+i),indEl=$('ind'+i);
+      if(rawEl) rawEl.innerText=d.raw[i];
+      if(normEl) normEl.innerText=d.norm[i];
+      if(barEl){
+        barEl.style.width=(d.norm[i]/10)+'%';
+        barEl.className=d.on_line[i]?'hbar-fill on':'hbar-fill';
+      }
+      if(indEl) indEl.className=d.on_line[i]?'ind on':'ind off';
+    }
     $('posVal').innerText=d.position;
-    $('posDot').style.left=Math.min(Math.max(((d.position+1000)/2000)*100,0),100)+'%';
+    $('posDot').style.left=Math.min(Math.max(((d.position+6000)/12000)*100,0),100)+'%';
     $('robotState').innerText=d.status||'-';
     
     if(d.checkpoints!==undefined) $('cpCount').innerText=d.checkpoints;
@@ -384,14 +383,18 @@ async function fetchS(){
   }catch(e){}
 }
 
-function setInd(ch,on){
-  const ind=$('ind'+ch),st=$('st'+ch),bar=$('bar'+ch);
-  ind.className=on?'ind on':'ind off';
-  st.innerText=on?'ON':'off';
-  bar.className=on?'hbar-fill on':'hbar-fill';
+function buildThreshSliders(){
+  const wrap=$('threshSliders');
+  if(!wrap||wrap.children.length>0)return;
+  const names=['S0 FL(39)','S1 L(36)','S2 CL(35)','S3 C(34)','S4 CR(33)','S5 R(32)','S6 FR(4)*','S7 FFR(15)*','S8 OR(2)*'];
+  names.forEach((n,i)=>{
+    const d=document.createElement('div');
+    d.className='thresh-row';
+    if(i>=6) d.style.opacity='0.65';
+    d.innerHTML='<span class="lbl">'+n+'</span><input type="range" min="0" max="4095" id="sl_th'+i+'" oninput="$(\'vl_th'+i+'\').innerText=this.value"><span class="val" id="vl_th'+i+'">-</span>';
+    wrap.appendChild(d);
+  });
 }
-
-function thl(ch){$('vl_th'+ch).innerText=$('sl_th'+ch).value}
 
 async function startCalibration(){
   try{
@@ -424,11 +427,14 @@ async function loadParams(){
     const r=await fetch('/api/params');if(!r.ok)return;
     const d=await r.json();
     $('bootCount').innerText=d.bootCount;
-    $('sMinL').innerText=d.minL;$('sMaxL').innerText=d.maxL;$('sThL').innerText=d.threshL;
-    $('sMinC').innerText=d.minC;$('sMaxC').innerText=d.maxC;$('sThC').innerText=d.threshC;
-    $('sMinR').innerText=d.minR;$('sMaxR').innerText=d.maxR;$('sThR').innerText=d.threshR;
-    $('sl_thL').value=d.threshL;$('sl_thC').value=d.threshC;$('sl_thR').value=d.threshR;
-    thl('L');thl('C');thl('R');
+    buildThreshSliders();
+    for(let i=0;i<9;i++){
+      if($('sMin'+i))$('sMin'+i).innerText=d.sensors_min[i];
+      if($('sMax'+i))$('sMax'+i).innerText=d.sensors_max[i];
+      if($('sTh'+i))$('sTh'+i).innerText=d.sensors_thresh[i];
+      if($('sl_th'+i))$('sl_th'+i).value=d.sensors_thresh[i];
+      if($('vl_th'+i))$('vl_th'+i).innerText=d.sensors_thresh[i];
+    }
     $('rng_kp').value=d.kp;$('num_kp').value=d.kp;
     $('rng_ki').value=d.ki;$('num_ki').value=d.ki;
     $('rng_kd').value=d.kd;$('num_kd').value=d.kd;
@@ -445,13 +451,17 @@ async function loadParams(){
     else if(d.navMode==2) navDesc = 'Custom Route Sequence (' + (d.customPath||'-') + ')';
     else if(d.navMode==3) navDesc = 'Standard PID Line Follower';
 
+    let sRows = '';
+    const sLabels=['S0 FL(39)','S1 L(36)','S2 CL(35)','S3 C(34)','S4 CR(33)','S5 R(32)','S6 FR(4)*','S7 FFR(15)*','S8 OR(2)*'];
+    for(let i=0;i<9;i++){
+      sRows += '<tr><td>'+sLabels[i]+'</td><td>'+d.sensors_min[i]+' - '+d.sensors_max[i]+' (T:'+d.sensors_thresh[i]+')</td></tr>';
+    }
+
     $('rvTable').innerHTML=
       '<tr><td>Calibration</td><td>'+(d.isCalibrated?'Yes':'No')+'</td></tr>'+
       '<tr><td>Strategy</td><td>'+navDesc+'</td></tr>'+
       '<tr><td>Custom Route</td><td>'+(d.customPath||'-')+'</td></tr>'+
-      '<tr><td>Left range</td><td>'+d.minL+' - '+d.maxL+' (T:'+d.threshL+')</td></tr>'+
-      '<tr><td>Center range</td><td>'+d.minC+' - '+d.maxC+' (T:'+d.threshC+')</td></tr>'+
-      '<tr><td>Right range</td><td>'+d.minR+' - '+d.maxR+' (T:'+d.threshR+')</td></tr>'+
+      sRows+
       '<tr><td>PID</td><td>'+d.kp+' / '+d.ki+' / '+d.kd+'</td></tr>'+
       '<tr><td>Speed</td><td>'+d.baseSpeed+' ('+d.minSpeed+'-'+d.maxSpeed+')</td></tr>'+
       '<tr><td>Polarity</td><td>'+(d.invertLine==0?'Black on white':'White on black')+'</td></tr>'+
@@ -460,7 +470,11 @@ async function loadParams(){
 }
 
 async function applyThresholds(){
-  const b=new URLSearchParams({threshL:$('sl_thL').value,threshC:$('sl_thC').value,threshR:$('sl_thR').value});
+  const b=new URLSearchParams();
+  for(let i=0;i<9;i++){
+    const el=$('sl_th'+i);
+    if(el) b.append('thresh'+i, el.value);
+  }
   const r=await fetch('/api/params',{method:'POST',body:b});
   if(r.ok){status('Thresholds saved','ok');loadParams()}
 }
@@ -488,9 +502,12 @@ async function saveAll(){
     baseSpeed:$('rng_base').value,minSpeed:$('rng_min').value,maxSpeed:$('rng_max').value,
     invertLine:$('sel_pol').value,
     navMode:$('sel_nav').value,
-    customPath:$('txt_route').value,
-    threshL:$('sl_thL').value,threshC:$('sl_thC').value,threshR:$('sl_thR').value
+    customPath:$('txt_route').value
   });
+  for(let i=0;i<9;i++){
+    const el=$('sl_th'+i);
+    if(el) b.append('thresh'+i, el.value);
+  }
   const r=await fetch('/api/params',{method:'POST',body:b});
   if(r.ok){status('All parameters saved to NVS','ok');loadParams()}
 }
@@ -507,7 +524,7 @@ async function resetDef(){
   if(r.ok){status('Reset to defaults','ok');loadParams()}
 }
 
-window.onload=()=>{loadParams();startPoll()};
+window.onload=()=>{buildThreshSliders();loadParams();startPoll()};
 </script>
 </body>
 </html>
@@ -556,38 +573,54 @@ void initWebPortal() {
     });
 
     // ------------------------------------------------------------------------
-    // API: GET /api/sensors - Live sensor telemetry & match state
+    // API: GET /api/sensors - Live sensor telemetry (ADC1 only — WiFi active)
+    // ADC2 sensors (S6-S8) CANNOT be read while WiFi is running.
+    // Their slots are reported as 0 in the JSON response.
     // ------------------------------------------------------------------------
     s_server.on("/api/sensors", HTTP_GET, [](AsyncWebServerRequest *request) {
-        uint16_t rawL = analogRead(SENSOR_LEFT_PIN);
-        uint16_t rawC = analogRead(SENSOR_CENTER_PIN);
-        uint16_t rawR = analogRead(SENSOR_RIGHT_PIN);
+        // Read only ADC1 sensors (S0-S5) — safe with active WiFi
+        uint16_t rawAll[NUM_SENSORS] = {0};
+        rawAll[0] = analogRead(SENSOR_S0_PIN);
+        rawAll[1] = analogRead(SENSOR_S1_PIN);
+        rawAll[2] = analogRead(SENSOR_S2_PIN);
+        rawAll[3] = analogRead(SENSOR_S3_PIN);
+        rawAll[4] = analogRead(SENSOR_S4_PIN);
+        rawAll[5] = analogRead(SENSOR_S5_PIN);
+        // rawAll[6..8] stay 0 — ADC2 not safe here
 
-        // Update calibration sweep if active
+        // Update calibration sweep if active (ADC1 only)
         if (isCalibrating()) {
-            updateCalibration(rawL, rawC, rawR);
+            updateCalibration(rawAll, false);
         }
 
-        // Feed motor safety watchdog
         notifyMotorSafetyFeed();
 
-        // Calculate normalized values & position
+        // Compute position + status using ADC1-only (activeSensors=6)
         int16_t dummyL = 0, dummyR = 0;
-        g_pid.compute(rawL, rawC, rawR, dummyL, dummyR);
+        g_pid.compute(rawAll, ADC1_SENSOR_COUNT, dummyL, dummyR);
         SensorReadings sr = g_pid.getReadings();
 
-        char json[450];
+        // Build compact JSON with all 9 sensor arrays
+        // S6-S8 show raw=0, norm=0, on_line=false in calibration mode
+        char json[700];
         snprintf(json, sizeof(json),
-                 "{\"raw\":{\"l\":%u,\"c\":%u,\"r\":%u},"
-                 "\"norm\":{\"l\":%u,\"c\":%u,\"r\":%u},"
-                 "\"on_line\":{\"l\":%s,\"c\":%s,\"r\":%s},"
+                 "{\"raw\":[%u,%u,%u,%u,%u,%u,%u,%u,%u],"
+                 "\"norm\":[%u,%u,%u,%u,%u,%u,%u,%u,%u],"
+                 "\"on_line\":[%s,%s,%s,%s,%s,%s,%s,%s,%s],"
                  "\"position\":%d,\"status\":\"%s\","
-                 "\"checkpoints\":%u,\"finished\":%s,\"solvedPath\":\"%s\"}",
-                 sr.rawL, sr.rawC, sr.rawR,
-                 sr.normL, sr.normC, sr.normR,
-                 sr.onLineL ? "true" : "false",
-                 sr.onLineC ? "true" : "false",
-                 sr.onLineR ? "true" : "false",
+                 "\"checkpoints\":%u,\"finished\":%s,\"solvedPath\":\"%s\","
+                 "\"adc2_note\":\"S6-S8 read 0 during calibration (ADC2+WiFi)\"}",
+                 sr.raw[0], sr.raw[1], sr.raw[2],
+                 sr.raw[3], sr.raw[4], sr.raw[5],
+                 sr.raw[6], sr.raw[7], sr.raw[8],
+                 sr.norm[0], sr.norm[1], sr.norm[2],
+                 sr.norm[3], sr.norm[4], sr.norm[5],
+                 sr.norm[6], sr.norm[7], sr.norm[8],
+                 sr.onLine[0]?"true":"false", sr.onLine[1]?"true":"false",
+                 sr.onLine[2]?"true":"false", sr.onLine[3]?"true":"false",
+                 sr.onLine[4]?"true":"false", sr.onLine[5]?"true":"false",
+                 sr.onLine[6]?"true":"false", sr.onLine[7]?"true":"false",
+                 sr.onLine[8]?"true":"false",
                  sr.position,
                  PIDController::statusToString(sr.status),
                  sr.checkpoints,
@@ -601,22 +634,36 @@ void initWebPortal() {
     // API: GET /api/params - Stored configuration
     // ------------------------------------------------------------------------
     s_server.on("/api/params", HTTP_GET, [](AsyncWebServerRequest *request) {
-        char json[500];
+        char json[900];
+        // Inline the 9-sensor arrays directly — no dynamic allocation needed
         snprintf(json, sizeof(json),
                  "{\"isCalibrated\":%u,"
-                 "\"minL\":%u,\"maxL\":%u,\"threshL\":%u,"
-                 "\"minC\":%u,\"maxC\":%u,\"threshC\":%u,"
-                 "\"minR\":%u,\"maxR\":%u,\"threshR\":%u,"
+                 "\"sensors_min\":[%u,%u,%u,%u,%u,%u,%u,%u,%u],"
+                 "\"sensors_max\":[%u,%u,%u,%u,%u,%u,%u,%u,%u],"
+                 "\"sensors_thresh\":[%u,%u,%u,%u,%u,%u,%u,%u,%u],"
                  "\"kp\":%.2f,\"ki\":%.3f,\"kd\":%.2f,"
                  "\"baseSpeed\":%d,\"minSpeed\":%d,\"maxSpeed\":%d,"
                  "\"invertLine\":%u,\"navMode\":%u,\"customPath\":\"%s\",\"bootCount\":%u}",
                  g_params.isCalibrated,
-                 g_params.minL, g_params.maxL, g_params.threshL,
-                 g_params.minC, g_params.maxC, g_params.threshC,
-                 g_params.minR, g_params.maxR, g_params.threshR,
+                 g_params.sensors[0].minVal, g_params.sensors[1].minVal,
+                 g_params.sensors[2].minVal, g_params.sensors[3].minVal,
+                 g_params.sensors[4].minVal, g_params.sensors[5].minVal,
+                 g_params.sensors[6].minVal, g_params.sensors[7].minVal,
+                 g_params.sensors[8].minVal,
+                 g_params.sensors[0].maxVal, g_params.sensors[1].maxVal,
+                 g_params.sensors[2].maxVal, g_params.sensors[3].maxVal,
+                 g_params.sensors[4].maxVal, g_params.sensors[5].maxVal,
+                 g_params.sensors[6].maxVal, g_params.sensors[7].maxVal,
+                 g_params.sensors[8].maxVal,
+                 g_params.sensors[0].thresh, g_params.sensors[1].thresh,
+                 g_params.sensors[2].thresh, g_params.sensors[3].thresh,
+                 g_params.sensors[4].thresh, g_params.sensors[5].thresh,
+                 g_params.sensors[6].thresh, g_params.sensors[7].thresh,
+                 g_params.sensors[8].thresh,
                  g_params.kp, g_params.ki, g_params.kd,
                  g_params.baseSpeed, g_params.minSpeed, g_params.maxSpeed,
-                 g_params.invertLine, g_params.navMode, g_params.customPath, getBootCount());
+                 g_params.invertLine, g_params.navMode, g_params.customPath,
+                 getBootCount());
 
         request->send(200, "application/json", json);
     });
@@ -633,19 +680,23 @@ void initWebPortal() {
     // API: GET /api/calibrate/status - Calibration sweep progress
     // ------------------------------------------------------------------------
     s_server.on("/api/calibrate/status", HTTP_GET, [](AsyncWebServerRequest *request) {
-        bool active = isCalibrating();
-        uint32_t rem = getCalibrationRemainingMs();
-        uint8_t pct = getCalibrationProgressPct();
+        bool     active = isCalibrating();
+        uint32_t rem    = getCalibrationRemainingMs();
+        uint8_t  pct    = getCalibrationProgressPct();
 
-        uint16_t minL, maxL, minC, maxC, minR, maxR;
-        getCalibrationSweepValues(minL, maxL, minC, maxC, minR, maxR);
+        uint16_t minArr[NUM_SENSORS], maxArr[NUM_SENSORS];
+        getCalibrationSweepValues(minArr, maxArr);
 
-        char json[300];
+        char json[512];
         snprintf(json, sizeof(json),
                  "{\"active\":%s,\"remaining_ms\":%u,\"progress_pct\":%u,"
-                 "\"sweep\":{\"minL\":%u,\"maxL\":%u,\"minC\":%u,\"maxC\":%u,\"minR\":%u,\"maxR\":%u}}",
+                 "\"sweep_min\":[%u,%u,%u,%u,%u,%u,%u,%u,%u],"
+                 "\"sweep_max\":[%u,%u,%u,%u,%u,%u,%u,%u,%u]}",
                  active ? "true" : "false", rem, pct,
-                 minL, maxL, minC, maxC, minR, maxR);
+                 minArr[0], minArr[1], minArr[2], minArr[3], minArr[4],
+                 minArr[5], minArr[6], minArr[7], minArr[8],
+                 maxArr[0], maxArr[1], maxArr[2], maxArr[3], maxArr[4],
+                 maxArr[5], maxArr[6], maxArr[7], maxArr[8]);
 
         request->send(200, "application/json", json);
     });
@@ -677,9 +728,16 @@ void initWebPortal() {
             g_params.customPath[sizeof(g_params.customPath) - 1] = '\0';
         }
 
-        if (request->hasParam("threshL", true)) g_params.threshL = request->getParam("threshL", true)->value().toInt();
-        if (request->hasParam("threshC", true)) g_params.threshC = request->getParam("threshC", true)->value().toInt();
-        if (request->hasParam("threshR", true)) g_params.threshR = request->getParam("threshR", true)->value().toInt();
+        // Per-sensor threshold override: thresh0..thresh8
+        // This allows manual tuning of ADC2 sensor thresholds (S6-S8)
+        // that cannot be auto-swept during calibration (WiFi active).
+        for (int i = 0; i < NUM_SENSORS; i++) {
+            char key[12];
+            snprintf(key, sizeof(key), "thresh%d", i);
+            if (request->hasParam(key, true)) {
+                g_params.sensors[i].thresh = (uint16_t)request->getParam(key, true)->value().toInt();
+            }
+        }
 
         saveParameters(g_params);
         g_pid.updateParams(g_params);
