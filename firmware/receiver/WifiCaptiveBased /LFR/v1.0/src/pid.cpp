@@ -228,10 +228,11 @@ void PIDController::executeTurn(TurnAction action) {
 // ---------------------------------------------------------------------------
 //  compute() — 9-sensor weighted PID
 //
-//  raw[NUM_SENSORS]: ADC readings. Indices beyond activeSensors are unused.
-//  activeSensors: 6 when WiFi is active (calibration mode), 9 during running.
+//  raw[NUM_SENSORS]: ADC readings.
+//  adc2Available: false when WiFi is active (only 6 ADC1 sensors active),
+//                 true during running mode (all 9 sensors active).
 // ---------------------------------------------------------------------------
-void PIDController::compute(const uint16_t raw[NUM_SENSORS], uint8_t activeSensors,
+void PIDController::compute(const uint16_t raw[NUM_SENSORS], bool adc2Available,
                             int16_t& outLeftSpeed, int16_t& outRightSpeed) {
     if (m_readings.runFinished) {
         outLeftSpeed  = 0;
@@ -240,10 +241,13 @@ void PIDController::compute(const uint16_t raw[NUM_SENSORS], uint8_t activeSenso
     }
 
     bool invert = (m_params.invertLine != 0);
+    static const bool S_IS_ADC1[NUM_SENSORS] = SENSOR_IS_ADC1;
 
-    // 1. Normalize all active sensors to 0-1000
+    // 1. Normalize all available sensors to 0-1000
+    uint8_t activeCount = 0;
     for (uint8_t i = 0; i < NUM_SENSORS; i++) {
-        if (i < activeSensors) {
+        if (adc2Available || S_IS_ADC1[i]) {
+            activeCount++;
             m_readings.raw[i]  = raw[i];
             m_readings.norm[i] = normalizeSensor(raw[i],
                                                   m_params.sensors[i].minVal,
@@ -252,25 +256,27 @@ void PIDController::compute(const uint16_t raw[NUM_SENSORS], uint8_t activeSenso
                 ? (raw[i] <= m_params.sensors[i].thresh)
                 : (raw[i] >= m_params.sensors[i].thresh);
         } else {
-            // Sensor not available (ADC2, WiFi active) — treat as "off line"
+            // Inactive ADC2 sensor (S0, S4, or S8) during WiFi calibration
             m_readings.raw[i]    = 0;
             m_readings.norm[i]   = 0;
             m_readings.onLine[i] = false;
         }
     }
 
-    // Convenience references for junction/end-zone detection
-    // Use inner 6 sensors (S1=L, S3=C, S5=R) for compatibility with 3-sensor logic
-    uint16_t normL = m_readings.norm[1];
-    uint16_t normC = m_readings.norm[3];
-    uint16_t normR = m_readings.norm[5];
+    // Convenience references for junction/end-zone detection:
+    // Left: S1 (-3000) | Center: S4 (0) or (S3+S5)/2 | Right: S7 (+3000)
+    uint16_t normL = m_readings.normL();
+    uint16_t normC = m_readings.normC();
+    uint16_t normR = m_readings.normR();
 
     // ========================================================================
     //  Case 1: ALL ACTIVE SENSORS ON BLACK (Zone B End Square vs Checkpoint)
     // ========================================================================
     bool allBlack = true;
-    for (uint8_t i = 0; i < activeSensors; i++) {
-        if (m_readings.norm[i] <= 650) { allBlack = false; break; }
+    for (uint8_t i = 0; i < NUM_SENSORS; i++) {
+        if (adc2Available || S_IS_ADC1[i]) {
+            if (m_readings.norm[i] <= 650) { allBlack = false; break; }
+        }
     }
 
     if (allBlack) {
@@ -310,10 +316,12 @@ void PIDController::compute(const uint16_t raw[NUM_SENSORS], uint8_t activeSenso
     //  Case 2: ALL ACTIVE SENSORS ON WHITE (line lost)
     // ========================================================================
     uint32_t sumNorm = 0;
-    for (uint8_t i = 0; i < activeSensors; i++) {
-        sumNorm += m_readings.norm[i];
+    for (uint8_t i = 0; i < NUM_SENSORS; i++) {
+        if (adc2Available || S_IS_ADC1[i]) {
+            sumNorm += m_readings.norm[i];
+        }
     }
-    uint32_t threshold = 220UL * activeSensors / NUM_SENSORS; // scale threshold
+    uint32_t threshold = 220UL * activeCount / NUM_SENSORS; // scale threshold
 
     if (sumNorm < threshold) {
         if (!m_wasLineLost) {
@@ -325,11 +333,13 @@ void PIDController::compute(const uint16_t raw[NUM_SENSORS], uint8_t activeSenso
             // Inch forward and re-check before declaring dead end
             delay(50);
             uint32_t recheckSum = 0;
-            for (uint8_t i = 0; i < activeSensors; i++) {
-                uint16_t r    = analogRead(SENSOR_PINS[i]);
-                recheckSum   += normalizeSensor(r,
-                                                m_params.sensors[i].minVal,
-                                                m_params.sensors[i].maxVal, invert);
+            for (uint8_t i = 0; i < NUM_SENSORS; i++) {
+                if (adc2Available || S_IS_ADC1[i]) {
+                    uint16_t r    = analogRead(SENSOR_PINS[i]);
+                    recheckSum   += normalizeSensor(r,
+                                                    m_params.sensors[i].minVal,
+                                                    m_params.sensors[i].maxVal, invert);
+                }
             }
             if (recheckSum < threshold) {
                 m_readings.status = LINE_DEAD_END;
@@ -402,9 +412,11 @@ void PIDController::compute(const uint16_t raw[NUM_SENSORS], uint8_t activeSenso
     // ========================================================================
     int64_t weightedSum = 0;
     uint32_t totalNorm  = 0;
-    for (uint8_t i = 0; i < activeSensors; i++) {
-        weightedSum += (int64_t)WEIGHTS[i] * m_readings.norm[i];
-        totalNorm   += m_readings.norm[i];
+    for (uint8_t i = 0; i < NUM_SENSORS; i++) {
+        if (adc2Available || S_IS_ADC1[i]) {
+            weightedSum += (int64_t)WEIGHTS[i] * m_readings.norm[i];
+            totalNorm   += m_readings.norm[i];
+        }
     }
 
     int16_t position = (totalNorm > 0)

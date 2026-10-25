@@ -38,16 +38,17 @@ struct SensorReadings {
     bool       runFinished;
     char       solvedPath[MAX_PATH_STEPS]; // Simplified shortest path discovered
 
-    // Legacy 3-sensor convenience aliases (used by turn detection helpers)
+    // 3-region convenience aliases (used by turn/junction detection)
+    // Left: S1 (-3000) | Center: S4 (0) or average of S3 & S5 | Right: S7 (+3000)
     uint16_t rawL()  const { return raw[1];  }
-    uint16_t rawC()  const { return raw[3];  }
-    uint16_t rawR()  const { return raw[5];  }
+    uint16_t rawC()  const { return (raw[4] > 0) ? raw[4] : ((raw[3] + raw[5]) / 2); }
+    uint16_t rawR()  const { return raw[7];  }
     uint16_t normL() const { return norm[1]; }
-    uint16_t normC() const { return norm[3]; }
-    uint16_t normR() const { return norm[5]; }
+    uint16_t normC() const { return (norm[4] > 0) ? norm[4] : ((norm[3] + norm[5]) / 2); }
+    uint16_t normR() const { return norm[7]; }
     bool onLineL()   const { return onLine[1]; }
-    bool onLineC()   const { return onLine[3]; }
-    bool onLineR()   const { return onLine[5]; }
+    bool onLineC()   const { return onLine[4] || (onLine[3] && onLine[5]); }
+    bool onLineR()   const { return onLine[7]; }
 };
 
 class PIDController {
@@ -60,8 +61,8 @@ public:
 
     // Read sensors and compute motor speeds.
     // raw[NUM_SENSORS]: raw ADC readings for all sensors.
-    // activeSensors: how many sensors are valid (6 during calibration/WiFi-on, 9 during running).
-    void compute(const uint16_t raw[NUM_SENSORS], uint8_t activeSensors,
+    // adc2Available: false during WiFi on (only 6 ADC1 sensors active), true during running mode (all 9 active).
+    void compute(const uint16_t raw[NUM_SENSORS], bool adc2Available,
                  int16_t& outLeftSpeed, int16_t& outRightSpeed);
 
     // Normalize raw reading based on calibration parameters

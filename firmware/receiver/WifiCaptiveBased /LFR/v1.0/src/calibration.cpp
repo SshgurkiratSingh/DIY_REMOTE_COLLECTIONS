@@ -68,13 +68,17 @@ void resetParametersToDefaults(RobotParameters& params) {
 }
 
 // ---------------------------------------------------------------------------
+static const bool S_IS_ADC1[NUM_SENSORS] = SENSOR_IS_ADC1;
+
 bool isCalibrationValid(const RobotParameters& params) {
     if (params.magic != PARAMS_MAGIC) return false;
     if (params.isCalibrated == 0)     return false;
 
-    // Check that the ADC1 sensors (S0-S5) have a meaningful range
-    for (int i = 0; i < ADC1_SENSOR_COUNT; i++) {
-        if (params.sensors[i].maxVal <= params.sensors[i].minVal + 150) return false;
+    // Check that all 6 ADC1 sensors (2 Left, 2 Center, 2 Right) have a meaningful range
+    for (int i = 0; i < NUM_SENSORS; i++) {
+        if (S_IS_ADC1[i]) {
+            if (params.sensors[i].maxVal <= params.sensors[i].minVal + 150) return false;
+        }
     }
     return true;
 }
@@ -101,12 +105,12 @@ bool loadParameters(RobotParameters& params) {
                   params.isCalibrated, params.navMode, params.customPath,
                   params.kp, params.ki, params.kd, params.baseSpeed);
     for (int i = 0; i < NUM_SENSORS; i++) {
-        Serial.printf("[NVS]   S%d pin=%-2d min=%-4u max=%-4u thresh=%-4u  (%s)\n",
-                      i, 0 /*pin lookup done in config.h*/,
+        Serial.printf("[NVS]   S%d min=%-4u max=%-4u thresh=%-4u  (%s)\n",
+                      i,
                       params.sensors[i].minVal,
                       params.sensors[i].maxVal,
                       params.sensors[i].thresh,
-                      i < ADC1_SENSOR_COUNT ? "ADC1-WiFi-safe" : "ADC2-run-only");
+                      S_IS_ADC1[i] ? "ADC1-WiFi-safe" : "ADC2-run-only");
     }
     return true;
 }
@@ -137,21 +141,21 @@ void startCalibration(uint32_t durationMs) {
         s_sweepMax[i] = 0;
     }
 
-    Serial.printf("[CALIB] Sweep started. Duration=%u ms. ADC2 sensors (S6-S8) "
-                  "excluded during WiFi-active calibration.\n", (unsigned)durationMs);
+    Serial.printf("[CALIB] Sweep started. Duration=%u ms. 6 ADC1 sensors active "
+                  "(2 Left, 2 Center, 2 Right). ADC2 sensors (S0, S4, S8) excluded.\n", (unsigned)durationMs);
 }
 
 // raw[NUM_SENSORS]: caller provides readings for every sensor each tick.
-// adc2Available=false  => skip indices 6-8 (WiFi active, ADC2 unusable).
+// adc2Available=false  => skip ADC2 sensors (S0, S4, S8) while WiFi active.
 // adc2Available=true   => include all 9 (running mode or WiFi disabled).
 void updateCalibration(const uint16_t raw[NUM_SENSORS], bool adc2Available) {
     if (!s_calibrating) return;
 
-    int limit = adc2Available ? NUM_SENSORS : ADC1_SENSOR_COUNT;
-
-    for (int i = 0; i < limit; i++) {
-        if (raw[i] < s_sweepMin[i]) s_sweepMin[i] = raw[i];
-        if (raw[i] > s_sweepMax[i]) s_sweepMax[i] = raw[i];
+    for (int i = 0; i < NUM_SENSORS; i++) {
+        if (adc2Available || S_IS_ADC1[i]) {
+            if (raw[i] < s_sweepMin[i]) s_sweepMin[i] = raw[i];
+            if (raw[i] > s_sweepMax[i]) s_sweepMax[i] = raw[i];
+        }
     }
 
     if (millis() - s_calibStartTime >= s_calibDuration) {
@@ -189,8 +193,10 @@ void getCalibrationSweepValues(uint16_t minOut[NUM_SENSORS],
 
 // ---------------------------------------------------------------------------
 //  Apply sweep results into params.
-//  ADC2 sensors (S6-S8): if not swept, copy from the nearest ADC1 neighbour
-//  (S5) as a safe default so the robot can still run.
+//  ADC2 sensors (S0, S4, S8): mirror from their immediate calibrated group neighbors:
+//    - S0 (Left, Far Left)    mirrors S1 (Left, Mid Left)
+//    - S4 (Center, Mid)       mirrors average of S3 & S5 (Center Left & Right)
+//    - S8 (Right, Far Right)  mirrors S7 (Right, Mid Right)
 // ---------------------------------------------------------------------------
 void applyCalibrationSweep(RobotParameters& params) {
     for (int i = 0; i < NUM_SENSORS; i++) {
@@ -199,16 +205,23 @@ void applyCalibrationSweep(RobotParameters& params) {
             params.sensors[i].minVal = s_sweepMin[i];
             params.sensors[i].maxVal = s_sweepMax[i];
             params.sensors[i].thresh = (s_sweepMin[i] + s_sweepMax[i]) / 2;
-            Serial.printf("[CALIB] S%d: min=%u max=%u thresh=%u\n",
+            Serial.printf("[CALIB] S%d (calibrated): min=%u max=%u thresh=%u\n",
                           i, s_sweepMin[i], s_sweepMax[i],
                           params.sensors[i].thresh);
-        } else if (i >= ADC1_SENSOR_COUNT) {
-            // ADC2 sensor — not swept. Mirror from S5 (last ADC1 sensor).
-            params.sensors[i].minVal = params.sensors[ADC1_SENSOR_COUNT - 1].minVal;
-            params.sensors[i].maxVal = params.sensors[ADC1_SENSOR_COUNT - 1].maxVal;
-            params.sensors[i].thresh = params.sensors[ADC1_SENSOR_COUNT - 1].thresh;
-            Serial.printf("[CALIB] S%d (ADC2, not swept): mirrored from S%d\n",
-                          i, ADC1_SENSOR_COUNT - 1);
+        } else {
+            // ADC2 sensor — mirror from its group neighbor(s)
+            if (i == 0) {
+                params.sensors[0] = params.sensors[1];
+                Serial.println("[CALIB] S0 (Left ADC2): mirrored from S1");
+            } else if (i == 4) {
+                params.sensors[4].minVal = (params.sensors[3].minVal + params.sensors[5].minVal) / 2;
+                params.sensors[4].maxVal = (params.sensors[3].maxVal + params.sensors[5].maxVal) / 2;
+                params.sensors[4].thresh = (params.sensors[3].thresh + params.sensors[5].thresh) / 2;
+                Serial.println("[CALIB] S4 (Center ADC2): mirrored average of S3 and S5");
+            } else if (i == 8) {
+                params.sensors[8] = params.sensors[7];
+                Serial.println("[CALIB] S8 (Right ADC2): mirrored from S7");
+            }
         }
     }
 

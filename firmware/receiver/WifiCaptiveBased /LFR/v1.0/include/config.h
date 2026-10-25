@@ -16,43 +16,51 @@
 
 // 9-Channel Analog IR Sensor Array
 //
-// Layout (robot's perspective, left to right):
-//   S0    S1    S2    S3    S4    S5  | S6    S7    S8
-//  [FL]  [L]  [CL]  [C]  [CR]  [R]  | [FR] [FFL] [FFR]
+// Balanced Symmetric Layout (3 physical regions x 3 sensors = 9 sensors):
+//   LEFT SIDE (3)     |    CENTER (3)     |    RIGHT SIDE (3)
+//   S0    S1    S2    |   S3    S4    S5    |   S6    S7    S8
+//  [FL]  [ML]  [IL]   |  [CL]  [CM]  [CR]   |  [IR]  [MR]  [FR]
+//  ADC2  ADC1  ADC1   |  ADC1  ADC2  ADC1   |  ADC1  ADC1  ADC2
 //
-// ADC1 sensors (GPIO 32-39) — safe when WiFi is active (Calibration mode)
-// ADC2 sensors (GPIO 2/4/15)— ONLY safe when WiFi is OFF (Running mode only)
+// WiFi Calibration Active (ADC1):
+//   Left side : 2 sensors (S1, S2)
+//   Center    : 2 sensors (S3, S5)
+//   Right side: 2 sensors (S6, S7)
+//   --> Exactly 2 IR sensors on Left, Center, and Right during WiFi on!
+//
+// Running Mode Only (ADC2, WiFi OFF):
+//   Left side : S0 (GPIO 4, Far Left)
+//   Center    : S4 (GPIO 2, Center Mid, shares LED)
+//   Right side: S8 (GPIO 15, Far Right)
 //
 #define NUM_SENSORS             9
-#define ADC1_SENSOR_COUNT       6    // S0-S5: readable during calibration (WiFi on)
-#define ADC2_SENSOR_COUNT       3    // S6-S8: only readable during running (WiFi off)
+#define ADC1_CALIB_COUNT        6    // Total sensors calibrated during WiFi on (2 left, 2 center, 2 right)
+#define SENSORS_PER_REGION      3    // 3 Left, 3 Center, 3 Right
+#define CALIB_PER_REGION        2    // 2 Left, 2 Center, 2 Right active during WiFi calibration
 
-// ADC1 sensors — positions: Far-Left to Right
-#define SENSOR_S0_PIN           39   // ADC1_CH3  Far Left        (WiFi-safe)
-#define SENSOR_S1_PIN           36   // ADC1_CH0  Left            (WiFi-safe)
-#define SENSOR_S2_PIN           35   // ADC1_CH7  Centre-Left     (WiFi-safe)
-#define SENSOR_S3_PIN           34   // ADC1_CH6  Centre          (WiFi-safe)
-#define SENSOR_S4_PIN           33   // ADC1_CH5  Centre-Right    (WiFi-safe)
-#define SENSOR_S5_PIN           32   // ADC1_CH4  Right           (WiFi-safe)
+// Pin mappings:
+#define SENSOR_S0_PIN           4    // Left Side  : Far Left     (ADC2_CH0, running only)
+#define SENSOR_S1_PIN           39   // Left Side  : Mid Left     (ADC1_CH3, WiFi-safe)
+#define SENSOR_S2_PIN           36   // Left Side  : Inner Left   (ADC1_CH0, WiFi-safe)
 
-// ADC2 sensors — positions: Far-Right extension
-// WARNING: These return garbage/errors while WiFi radio is active.
-//          They are ONLY read in MODE_RUNNING (WiFi is fully OFF).
-//          GPIO2 doubles as STATUS_LED in calibration mode; that's fine because
-//          in running mode the LED is simply left LOW and GPIO2 is used as ADC.
-#define SENSOR_S6_PIN           4    // ADC2_CH0  Far Right       (running-only)
-#define SENSOR_S7_PIN           15   // ADC2_CH3  Far-Far Right   (running-only)
-#define SENSOR_S8_PIN           2    // ADC2_CH2  Outer Right     (running-only, shares STATUS_LED)
+#define SENSOR_S3_PIN           35   // Center     : Center-Left  (ADC1_CH7, WiFi-safe)
+#define SENSOR_S4_PIN           2    // Center     : Center-Mid   (ADC2_CH2, running only, shares LED)
+#define SENSOR_S5_PIN           34   // Center     : Center-Right (ADC1_CH6, WiFi-safe)
 
-// Weights for each sensor in the position calculation
-// Range: -4000 (S0 far-left) to +4000 (S8 far-right), step 1000
-// Position = sum(weight[i] * norm[i]) / sum(norm[i])
-#define SENSOR_WEIGHTS          {-4000, -3000, -1500, 0, 1500, 3000, 4000, 5000, 6000}
+#define SENSOR_S6_PIN           33   // Right Side : Inner Right  (ADC1_CH5, WiFi-safe)
+#define SENSOR_S7_PIN           32   // Right Side : Mid Right    (ADC1_CH4, WiFi-safe)
+#define SENSOR_S8_PIN           15   // Right Side : Far Right    (ADC2_CH3, running only)
 
-// Legacy aliases (kept for compatibility with turn detection in pid.cpp)
+// Symmetric weights: Center (S4) = 0, range [-4000 .. +4000]
+#define SENSOR_WEIGHTS          {-4000, -3000, -2000, -1000, 0, 1000, 2000, 3000, 4000}
+
+// Flag whether sensor[i] is ADC1 (readable with WiFi on)
+#define SENSOR_IS_ADC1          {false, true, true, true, false, true, true, true, false}
+
+// Aliases for junction/turn detection
 #define SENSOR_LEFT_PIN         SENSOR_S1_PIN
 #define SENSOR_CENTER_PIN       SENSOR_S3_PIN
-#define SENSOR_RIGHT_PIN        SENSOR_S5_PIN
+#define SENSOR_RIGHT_PIN        SENSOR_S7_PIN
 
 // Indicators & Buttons
 #define STATUS_LED_PIN          2    // Built-in status LED
