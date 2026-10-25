@@ -154,13 +154,13 @@ a{color:#6bf}
         <tr><td class="lbl">Left: S1 - Mid Left (39)</td><td class="mono" id="raw1">-</td><td><div class="hbar"><div class="hbar-fill" id="bar1"></div></div></td><td class="mono" id="norm1">-</td><td><span class="ind" id="ind1"></span></td></tr>
         <tr><td class="lbl">Left: S2 - Inner Left (36)</td><td class="mono" id="raw2">-</td><td><div class="hbar"><div class="hbar-fill" id="bar2"></div></div></td><td class="mono" id="norm2">-</td><td><span class="ind" id="ind2"></span></td></tr>
         <tr><td class="lbl">Center: S3 - Center Left (35)</td><td class="mono" id="raw3">-</td><td><div class="hbar"><div class="hbar-fill" id="bar3"></div></div></td><td class="mono" id="norm3">-</td><td><span class="ind" id="ind3"></span></td></tr>
-        <tr style="opacity:0.55"><td class="lbl">Center: S4 - Center Mid (2) ADC2</td><td class="mono" id="raw4">0*</td><td><div class="hbar"><div class="hbar-fill" id="bar4"></div></div></td><td class="mono" id="norm4">0*</td><td><span class="ind" id="ind4"></span></td></tr>
-        <tr><td class="lbl">Center: S5 - Center Right (34)</td><td class="mono" id="raw5">-</td><td><div class="hbar"><div class="hbar-fill" id="bar5"></div></div></td><td class="mono" id="norm5">-</td><td><span class="ind" id="ind5"></span></td></tr>
-        <tr><td class="lbl">Right: S6 - Inner Right (33)</td><td class="mono" id="raw6">-</td><td><div class="hbar"><div class="hbar-fill" id="bar6"></div></div></td><td class="mono" id="norm6">-</td><td><span class="ind" id="ind6"></span></td></tr>
-        <tr><td class="lbl">Right: S7 - Mid Right (32)</td><td class="mono" id="raw7">-</td><td><div class="hbar"><div class="hbar-fill" id="bar7"></div></div></td><td class="mono" id="norm7">-</td><td><span class="ind" id="ind7"></span></td></tr>
+        <tr><td class="lbl">Center: S4 - Center Mid (34)</td><td class="mono" id="raw4">-</td><td><div class="hbar"><div class="hbar-fill" id="bar4"></div></div></td><td class="mono" id="norm4">-</td><td><span class="ind" id="ind4"></span></td></tr>
+        <tr><td class="lbl">Center: S5 - Center Right (33)</td><td class="mono" id="raw5">-</td><td><div class="hbar"><div class="hbar-fill" id="bar5"></div></div></td><td class="mono" id="norm5">-</td><td><span class="ind" id="ind5"></span></td></tr>
+        <tr><td class="lbl">Right: S6 - Inner Right (32)</td><td class="mono" id="raw6">-</td><td><div class="hbar"><div class="hbar-fill" id="bar6"></div></div></td><td class="mono" id="norm6">-</td><td><span class="ind" id="ind6"></span></td></tr>
+        <tr style="opacity:0.55"><td class="lbl">Right: S7 - Mid Right (2) ADC2</td><td class="mono" id="raw7">0*</td><td><div class="hbar"><div class="hbar-fill" id="bar7"></div></div></td><td class="mono" id="norm7">0*</td><td><span class="ind" id="ind7"></span></td></tr>
         <tr style="opacity:0.55"><td class="lbl">Right: S8 - Far Right (15) ADC2</td><td class="mono" id="raw8">0*</td><td><div class="hbar"><div class="hbar-fill" id="bar8"></div></div></td><td class="mono" id="norm8">0*</td><td><span class="ind" id="ind8"></span></td></tr>
       </table>
-      <div style="font-size:10px;color:#555;margin-top:2px">* S0, S4, S8 (ADC2: 1 Left, 1 Center, 1 Right) read 0 during WiFi calibration. S1,S2 (Left), S3,S5 (Center), S6,S7 (Right) are active (2 per region). All 9 sensors active in running mode (WiFi off).</div>
+      <div style="font-size:10px;color:#555;margin-top:2px">* S0, S7, S8 (ADC2) read 0 during WiFi calibration. Active in WiFi: S1,S2 (Left), S3,S4,S5 (Center: all 3 active), S6 (Right). All 9 sensors active in running mode (WiFi off).</div>
 
       <div class="pos-wrap">
         <div class="pos-row">
@@ -175,8 +175,8 @@ a{color:#6bf}
     </div>
 
     <div class="sec">
-      <div class="sec-title">Calibration (2 Left, 2 Center, 2 Right active during WiFi)</div>
-      <p style="font-size:12px;color:#777;margin-bottom:8px">Sweep robot across black line and white surface during the 10s window. ADC2 sensors (S0, S4, S8) mirror calibration from neighboring ADC1 sensors.</p>
+      <div class="sec-title">Calibration (3 Center, 2 Left, 1 Right active during WiFi)</div>
+      <p style="font-size:12px;color:#777;margin-bottom:8px">Sweep robot across black line and white surface during the 10s window. Center sensors (S3, S4, S5) are all fully calibrated. ADC2 sensors (S0, S7, S8) mirror calibration from neighboring ADC1 sensors.</p>
       <button class="btn btn-act" id="btnCalib" onclick="startCalibration()">Start Calibration Sweep (10s)</button>
       <div id="calibBox">
         <span>Sweeping... <span class="mono" id="countdown">10</span>s left</span>
@@ -197,10 +197,10 @@ a{color:#6bf}
           <tr><td class="lbl">S1 ML(39)</td><td class="mono" id="sMin1">-</td><td class="mono" id="sMax1">-</td><td class="mono" id="sTh1">-</td></tr>
           <tr><td class="lbl">S2 IL(36)</td><td class="mono" id="sMin2">-</td><td class="mono" id="sMax2">-</td><td class="mono" id="sTh2">-</td></tr>
           <tr><td class="lbl">S3 CL(35)</td><td class="mono" id="sMin3">-</td><td class="mono" id="sMax3">-</td><td class="mono" id="sTh3">-</td></tr>
-          <tr style="opacity:0.6"><td class="lbl">S4 CM(2)*</td><td class="mono" id="sMin4">-</td><td class="mono" id="sMax4">-</td><td class="mono" id="sTh4">-</td></tr>
-          <tr><td class="lbl">S5 CR(34)</td><td class="mono" id="sMin5">-</td><td class="mono" id="sMax5">-</td><td class="mono" id="sTh5">-</td></tr>
-          <tr><td class="lbl">S6 IR(33)</td><td class="mono" id="sMin6">-</td><td class="mono" id="sMax6">-</td><td class="mono" id="sTh6">-</td></tr>
-          <tr><td class="lbl">S7 MR(32)</td><td class="mono" id="sMin7">-</td><td class="mono" id="sMax7">-</td><td class="mono" id="sTh7">-</td></tr>
+          <tr><td class="lbl">S4 CM(34)</td><td class="mono" id="sMin4">-</td><td class="mono" id="sMax4">-</td><td class="mono" id="sTh4">-</td></tr>
+          <tr><td class="lbl">S5 CR(33)</td><td class="mono" id="sMin5">-</td><td class="mono" id="sMax5">-</td><td class="mono" id="sTh5">-</td></tr>
+          <tr><td class="lbl">S6 IR(32)</td><td class="mono" id="sMin6">-</td><td class="mono" id="sMax6">-</td><td class="mono" id="sTh6">-</td></tr>
+          <tr style="opacity:0.6"><td class="lbl">S7 MR(2)*</td><td class="mono" id="sMin7">-</td><td class="mono" id="sMax7">-</td><td class="mono" id="sTh7">-</td></tr>
           <tr style="opacity:0.6"><td class="lbl">S8 FR(15)*</td><td class="mono" id="sMin8">-</td><td class="mono" id="sMax8">-</td><td class="mono" id="sTh8">-</td></tr>
         </table>
       </div>
@@ -386,11 +386,11 @@ async function fetchS(){
 function buildThreshSliders(){
   const wrap=$('threshSliders');
   if(!wrap||wrap.children.length>0)return;
-  const names=['S0 FL(4)*','S1 ML(39)','S2 IL(36)','S3 CL(35)','S4 CM(2)*','S5 CR(34)','S6 IR(33)','S7 MR(32)','S8 FR(15)*'];
+  const names=['S0 FL(4)*','S1 ML(39)','S2 IL(36)','S3 CL(35)','S4 CM(34)','S5 CR(33)','S6 IR(32)','S7 MR(2)*','S8 FR(15)*'];
   names.forEach((n,i)=>{
     const d=document.createElement('div');
     d.className='thresh-row';
-    if(i===0||i===4||i===8) d.style.opacity='0.65';
+    if(i===0||i===7||i===8) d.style.opacity='0.65';
     d.innerHTML='<span class="lbl">'+n+'</span><input type="range" min="0" max="4095" id="sl_th'+i+'" oninput="$(\'vl_th'+i+'\').innerText=this.value"><span class="val" id="vl_th'+i+'">-</span>';
     wrap.appendChild(d);
   });
@@ -452,7 +452,7 @@ async function loadParams(){
     else if(d.navMode==3) navDesc = 'Standard PID Line Follower';
 
     let sRows = '';
-    const sLabels=['S0 FL(4)*','S1 ML(39)','S2 IL(36)','S3 CL(35)','S4 CM(2)*','S5 CR(34)','S6 IR(33)','S7 MR(32)','S8 FR(15)*'];
+    const sLabels=['S0 FL(4)*','S1 ML(39)','S2 IL(36)','S3 CL(35)','S4 CM(34)','S5 CR(33)','S6 IR(32)','S7 MR(2)*','S8 FR(15)*'];
     for(let i=0;i<9;i++){
       sRows += '<tr><td>'+sLabels[i]+'</td><td>'+d.sensors_min[i]+' - '+d.sensors_max[i]+' (T:'+d.sensors_thresh[i]+')</td></tr>';
     }
@@ -574,20 +574,20 @@ void initWebPortal() {
 
     // ------------------------------------------------------------------------
     // API: GET /api/sensors - Live sensor telemetry (ADC1 only — WiFi active)
-    // ADC2 sensors (S0, S4, S8: 1 left, 1 center, 1 right) CANNOT be read while WiFi is running.
+    // ADC2 sensors (S0, S7, S8) CANNOT be read while WiFi is running.
     // Their slots are reported as 0 in the JSON response.
-    // Active during WiFi: 2 Left (S1, S2), 2 Center (S3, S5), 2 Right (S6, S7).
+    // Active during WiFi: 2 Left (S1, S2), 3 Center (S3, S4, S5), 1 Right (S6).
     // ------------------------------------------------------------------------
     s_server.on("/api/sensors", HTTP_GET, [](AsyncWebServerRequest *request) {
-        // Read the 6 ADC1 sensors (2 Left: S1,S2 | 2 Center: S3,S5 | 2 Right: S6,S7) — safe with active WiFi
+        // Read the 6 ADC1 sensors (2 Left: S1,S2 | 3 Center: S3,S4,S5 | 1 Right: S6) — safe with active WiFi
         uint16_t rawAll[NUM_SENSORS] = {0};
         rawAll[1] = analogRead(SENSOR_S1_PIN);
         rawAll[2] = analogRead(SENSOR_S2_PIN);
         rawAll[3] = analogRead(SENSOR_S3_PIN);
+        rawAll[4] = analogRead(SENSOR_S4_PIN);
         rawAll[5] = analogRead(SENSOR_S5_PIN);
         rawAll[6] = analogRead(SENSOR_S6_PIN);
-        rawAll[7] = analogRead(SENSOR_S7_PIN);
-        // rawAll[0] (S0), rawAll[4] (S4), rawAll[8] (S8) stay 0 — ADC2 channels not safe with WiFi
+        // rawAll[0] (S0), rawAll[7] (S7), rawAll[8] (S8) stay 0 — ADC2 channels not safe with WiFi
 
         // Update calibration sweep if active (ADC1 only)
         if (isCalibrating()) {
@@ -602,7 +602,7 @@ void initWebPortal() {
         SensorReadings sr = g_pid.getReadings();
 
         // Build compact JSON with all 9 sensor arrays
-        // S0, S4, S8 show raw=0, norm=0, on_line=false in calibration mode
+        // S0, S7, S8 show raw=0, norm=0, on_line=false in calibration mode
         char json[700];
         snprintf(json, sizeof(json),
                  "{\"raw\":[%u,%u,%u,%u,%u,%u,%u,%u,%u],"
@@ -610,7 +610,7 @@ void initWebPortal() {
                  "\"on_line\":[%s,%s,%s,%s,%s,%s,%s,%s,%s],"
                  "\"position\":%d,\"status\":\"%s\","
                  "\"checkpoints\":%u,\"finished\":%s,\"solvedPath\":\"%s\","
-                 "\"adc2_note\":\"S0, S4, S8 read 0 during calibration (ADC2+WiFi)\"}",
+                 "\"adc2_note\":\"S0, S7, S8 read 0 during calibration (ADC2+WiFi)\"}",
                  sr.raw[0], sr.raw[1], sr.raw[2],
                  sr.raw[3], sr.raw[4], sr.raw[5],
                  sr.raw[6], sr.raw[7], sr.raw[8],
@@ -730,7 +730,7 @@ void initWebPortal() {
         }
 
         // Per-sensor threshold override: thresh0..thresh8
-        // This allows manual tuning of ADC2 sensor thresholds (S0, S4, S8)
+        // This allows manual tuning of ADC2 sensor thresholds (S0, S7, S8)
         // that cannot be auto-swept during calibration (WiFi active).
         for (int i = 0; i < NUM_SENSORS; i++) {
             char key[12];

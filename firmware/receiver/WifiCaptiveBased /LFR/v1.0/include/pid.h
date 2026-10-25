@@ -39,16 +39,16 @@ struct SensorReadings {
     char       solvedPath[MAX_PATH_STEPS]; // Simplified shortest path discovered
 
     // 3-region convenience aliases (used by turn/junction detection)
-    // Left: S1 (-3000) | Center: S4 (0) or average of S3 & S5 | Right: S7 (+3000)
+    // Left: S1 (-3000) | Center: S4 (0, dead center on ADC1) | Right: S7 (+3000) or S6 (+2000 in WiFi)
     uint16_t rawL()  const { return raw[1];  }
-    uint16_t rawC()  const { return (raw[4] > 0) ? raw[4] : ((raw[3] + raw[5]) / 2); }
-    uint16_t rawR()  const { return raw[7];  }
+    uint16_t rawC()  const { return raw[4];  }
+    uint16_t rawR()  const { return (raw[7] > 0) ? raw[7] : raw[6];  }
     uint16_t normL() const { return norm[1]; }
-    uint16_t normC() const { return (norm[4] > 0) ? norm[4] : ((norm[3] + norm[5]) / 2); }
-    uint16_t normR() const { return norm[7]; }
+    uint16_t normC() const { return norm[4]; }
+    uint16_t normR() const { return (norm[7] > 0) ? norm[7] : norm[6]; }
     bool onLineL()   const { return onLine[1]; }
-    bool onLineC()   const { return onLine[4] || (onLine[3] && onLine[5]); }
-    bool onLineR()   const { return onLine[7]; }
+    bool onLineC()   const { return onLine[4]; }
+    bool onLineR()   const { return onLine[7] || onLine[6]; }
 };
 
 class PIDController {
