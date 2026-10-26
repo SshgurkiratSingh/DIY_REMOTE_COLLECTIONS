@@ -21,6 +21,9 @@ static void writePwmRight(uint8_t duty) {
 }
 
 void initMotors() {
+    pinMode(STBY_PIN, OUTPUT);
+    digitalWrite(STBY_PIN, HIGH);
+
     pinMode(IN1_PIN, OUTPUT);
     pinMode(IN2_PIN, OUTPUT);
     pinMode(IN3_PIN, OUTPUT);
@@ -46,10 +49,16 @@ void initMotors() {
     s_lastFeedTime = millis();
     s_isSafetyHalted = false;
 
-    Serial.println("[MOTOR] L298N Motors initialized (5kHz, 8-bit PWM).");
+    Serial.println("[MOTOR] TB6612FNG Motors initialized (5kHz, 8-bit PWM).");
+}
+
+void setMotorStandby(bool standby) {
+    digitalWrite(STBY_PIN, standby ? LOW : HIGH);
 }
 
 void setMotorSpeed(int16_t leftSpeed, int16_t rightSpeed) {
+    digitalWrite(STBY_PIN, HIGH);
+
     // Left motor direction & PWM
     if (leftSpeed > 0) {
         digitalWrite(IN1_PIN, HIGH);
@@ -95,6 +104,7 @@ void emergencyStop() {
 }
 
 void testMotor(const String& action, int16_t speed) {
+    digitalWrite(STBY_PIN, HIGH);
     speed = constrain(speed, 0, 255);
     Serial.printf("[MOTOR TEST] Action='%s', Speed=%d\n", action.c_str(), speed);
 

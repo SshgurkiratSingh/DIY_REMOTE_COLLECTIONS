@@ -13,6 +13,9 @@ void setMotorSpeed(int16_t leftSpeed, int16_t rightSpeed);
 // Full stop on both motors immediately
 void emergencyStop();
 
+// Put TB6612 motor driver into standby mode (true = standby/Hi-Z, false = active)
+void setMotorStandby(bool standby);
+
 // Motor testing routine for verification of wiring & direction
 // action: "lf", "lr", "rf", "rr", "forward", "reverse", "stop"
 void testMotor(const String& action, int16_t speed);

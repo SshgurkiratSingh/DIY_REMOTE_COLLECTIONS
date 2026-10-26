@@ -68,20 +68,14 @@ void setup() {
     digitalWrite(STATUS_LED_PIN, LOW);
     pinMode(BOOT_BUTTON_PIN, INPUT_PULLUP);
 
-    // 9-sensor array — 6 ADC1 sensors (2 Left, 3 Center, 1 Right) always configured as INPUT.
-    // 3 ADC2 sensors (S0=GPIO4, S7=GPIO2, S8=GPIO15):
-    // In calibration mode: S0 and S8 are OUTPUT LOW so they don't float; S7/GPIO2 is STATUS_LED.
-    // In running mode: S0, S7, S8 are switched to INPUT (ADC2) since WiFi is off.
+    // 9-sensor array — all 9 sensors initialized as INPUT
     static const uint8_t SENSOR_PINS_MAIN[NUM_SENSORS] = {
         SENSOR_S0_PIN, SENSOR_S1_PIN, SENSOR_S2_PIN,
         SENSOR_S3_PIN, SENSOR_S4_PIN, SENSOR_S5_PIN,
         SENSOR_S6_PIN, SENSOR_S7_PIN, SENSOR_S8_PIN
     };
-    static const bool S_IS_ADC1[NUM_SENSORS] = SENSOR_IS_ADC1;
     for (int i = 0; i < NUM_SENSORS; i++) {
-        if (S_IS_ADC1[i]) {
-            pinMode(SENSOR_PINS_MAIN[i], INPUT);
-        }
+        pinMode(SENSOR_PINS_MAIN[i], INPUT);
     }
 
     // Initialize Motor subsystem
@@ -119,19 +113,13 @@ void setup() {
     }
 
     if (s_mode == MODE_CALIBRATION) {
-        // ADC2 sensors must NOT be read while WiFi is active.
-        // Drive S0 (GPIO 4) and S8 (GPIO 15) LOW as outputs so they don't float.
-        // S7 is GPIO 2 (STATUS_LED_PIN), already initialized as OUTPUT for LED blink.
-        pinMode(SENSOR_S0_PIN, OUTPUT); digitalWrite(SENSOR_S0_PIN, LOW);
-        pinMode(SENSOR_S8_PIN, OUTPUT); digitalWrite(SENSOR_S8_PIN, LOW);
+        // Put TB6612 into standby mode so status LED blinker on GPIO 2 doesn't energize Motor A
+        setMotorStandby(true);
         initWebPortal();
         emergencyStop();
     } else {
-        // Running mode: WiFi is NEVER started — ADC2 is fully usable.
-        // Switch S0 (GPIO 4), S7 (GPIO 2), S8 (GPIO 15) to analog inputs.
-        pinMode(SENSOR_S0_PIN, INPUT);
-        pinMode(SENSOR_S7_PIN, INPUT); // GPIO 2: switched to Mid Right sensor input
-        pinMode(SENSOR_S8_PIN, INPUT);
+        // Running mode: Enable TB6612 motor driver (WiFi is OFF, ADC2 is fully usable)
+        setMotorStandby(false);
         // Initialize PID controller with loaded parameters
         g_pid.init(g_params);
         notifyMotorSafetyFeed();
@@ -255,7 +243,7 @@ void loop() {
             rawAll[5] = analogRead(SENSOR_S5_PIN);
             rawAll[6] = analogRead(SENSOR_S6_PIN);
             rawAll[7] = analogRead(SENSOR_S7_PIN);
-            rawAll[8] = analogRead(SENSOR_S8_PIN); // GPIO2 — safe in running mode
+            rawAll[8] = analogRead(SENSOR_S8_PIN);
 
             // Feed motor safety watchdog
             notifyMotorSafetyFeed();

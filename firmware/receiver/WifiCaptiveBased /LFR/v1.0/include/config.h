@@ -6,13 +6,23 @@
 //  Hardware Pin Definitions
 // ============================================================================
 
-// L298N Motor Driver Pins
-#define ENA_PIN                 25   // PWM speed control for Left Motor
-#define IN1_PIN                 26   // Direction control 1 for Left Motor
-#define IN2_PIN                 27   // Direction control 2 for Left Motor
-#define ENB_PIN                 14   // PWM speed control for Right Motor
-#define IN3_PIN                 12   // Direction control 1 for Right Motor
-#define IN4_PIN                 13   // Direction control 2 for Right Motor
+// TB6612FNG Dual H-Bridge Motor Driver Pins
+#define MOTOR_PWMA_PIN          12   // D12: PWM speed control for Motor A (Left)
+#define MOTOR_AIN1_PIN          4    // D4 : Direction control 1 for Motor A (Left)
+#define MOTOR_AIN2_PIN          2    // D2 : Direction control 2 for Motor A (Left)
+#define MOTOR_PWMB_PIN          13   // D13: PWM speed control for Motor B (Right)
+#define MOTOR_BIN1_PIN          15   // D15: Direction control 1 for Motor B (Right)
+#define MOTOR_BIN2_PIN          23   // D23: Direction control 2 for Motor B (Right)
+#define MOTOR_STBY_PIN          22   // D22: Standby control (HIGH = enabled, LOW = standby)
+
+// Backward-compatible aliases
+#define ENA_PIN                 MOTOR_PWMA_PIN
+#define IN1_PIN                 MOTOR_AIN1_PIN
+#define IN2_PIN                 MOTOR_AIN2_PIN
+#define ENB_PIN                 MOTOR_PWMB_PIN
+#define IN3_PIN                 MOTOR_BIN1_PIN
+#define IN4_PIN                 MOTOR_BIN2_PIN
+#define STBY_PIN                MOTOR_STBY_PIN
 
 // 9-Channel Analog IR Sensor Array
 //
@@ -29,25 +39,26 @@
 //   Total: 6 ADC1 sensors active during WiFi calibration.
 //
 // Running Mode Only (ADC2, WiFi OFF):
-//   Left side : S0 (GPIO 4, Far Left)
-//   Right side: S7 (GPIO 2, Mid Right, shares LED), S8 (GPIO 15, Far Right)
+//   Left side : S0 (GPIO 25, Far Left)
+//   Right side: S7 (GPIO 26, Mid Right), S8 (GPIO 27, Far Right)
 //
+// Contiguous left rail pins on ESP32 DevKit: VP, VN, 34, 35, 33, 32, 25, 26, 27
 #define NUM_SENSORS             9
 #define ADC1_CALIB_COUNT        6    // Total sensors calibrated during WiFi on (2 left, 3 center, 1 right)
 #define SENSORS_PER_REGION      3    // 3 Left, 3 Center, 3 Right
 
 // Pin mappings:
-#define SENSOR_S0_PIN           4    // Left Side  : Far Left     (ADC2_CH0, running only)
-#define SENSOR_S1_PIN           39   // Left Side  : Mid Left     (ADC1_CH3, WiFi-safe)
-#define SENSOR_S2_PIN           36   // Left Side  : Inner Left   (ADC1_CH0, WiFi-safe)
+#define SENSOR_S0_PIN           25   // Left Side  : Far Left     (D25, ADC2_CH8, running only)
+#define SENSOR_S1_PIN           39   // Left Side  : Mid Left     (VN,  ADC1_CH3, WiFi-safe)
+#define SENSOR_S2_PIN           36   // Left Side  : Inner Left   (VP,  ADC1_CH0, WiFi-safe)
 
-#define SENSOR_S3_PIN           35   // Center     : Center-Left  (ADC1_CH7, WiFi-safe)
-#define SENSOR_S4_PIN           34   // Center     : Center-Mid   (ADC1_CH6, WiFi-safe, dead center!)
-#define SENSOR_S5_PIN           33   // Center     : Center-Right (ADC1_CH5, WiFi-safe)
+#define SENSOR_S3_PIN           35   // Center     : Center-Left  (D35, ADC1_CH7, WiFi-safe)
+#define SENSOR_S4_PIN           34   // Center     : Center-Mid   (D34, ADC1_CH6, WiFi-safe, dead center!)
+#define SENSOR_S5_PIN           33   // Center     : Center-Right (D33, ADC1_CH5, WiFi-safe)
 
-#define SENSOR_S6_PIN           32   // Right Side : Inner Right  (ADC1_CH4, WiFi-safe)
-#define SENSOR_S7_PIN           2    // Right Side : Mid Right    (ADC2_CH2, running only, shares LED)
-#define SENSOR_S8_PIN           15   // Right Side : Far Right    (ADC2_CH3, running only)
+#define SENSOR_S6_PIN           32   // Right Side : Inner Right  (D32, ADC1_CH4, WiFi-safe)
+#define SENSOR_S7_PIN           26   // Right Side : Mid Right    (D26, ADC2_CH9, running only)
+#define SENSOR_S8_PIN           27   // Right Side : Far Right    (D27, ADC2_CH7, running only)
 
 // Symmetric weights: Center (S4) = 0, range [-4000 .. +4000]
 #define SENSOR_WEIGHTS          {-4000, -3000, -2000, -1000, 0, 1000, 2000, 3000, 4000}
@@ -61,7 +72,7 @@
 #define SENSOR_RIGHT_PIN        SENSOR_S6_PIN
 
 // Indicators & Buttons
-#define STATUS_LED_PIN          2    // Built-in status LED
+#define STATUS_LED_PIN          2    // Built-in status LED (shares AIN2, safe with STBY low)
 #define BOOT_BUTTON_PIN         0    // ESP32 BOOT button (active LOW)
 
 // ============================================================================
