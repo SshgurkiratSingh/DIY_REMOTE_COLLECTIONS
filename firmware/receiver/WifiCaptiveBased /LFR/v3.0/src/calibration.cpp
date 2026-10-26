@@ -1,5 +1,6 @@
 #include "calibration.h"
 #include <Preferences.h>
+#include "pid.h"
 
 RobotParameters g_params;
 
@@ -182,6 +183,7 @@ void applyCalibrationSweep(RobotParameters& params) {
 
     params.isCalibrated = 1;
     saveParameters(params);
+    g_pid.updateParams(params);
 }
 
 void cancelCalibration() {

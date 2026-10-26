@@ -276,7 +276,7 @@ a{color:#6bf}
   <div id="p-motors" class="pane">
     <div class="sec">
       <div class="sec-title">Motor Test</div>
-      <p style="font-size:12px;color:#777;margin-bottom:8px">Verify L298N wiring. Each button runs one motor at the selected speed.</p>
+      <p style="font-size:12px;color:#777;margin-bottom:8px">Verify TB6612FNG wiring (Left: PWMA D13, AIN1 D27, AIN2 D14 | Right: PWMB D12, BIN1 D25, BIN2 D16 | STBY D26). Each button runs one motor at the selected speed.</p>
       <div class="field">
         <label>Test Speed: <span class="mono" id="tsLabel">120</span></label>
         <input type="range" id="testSpeed" min="40" max="255" value="120" oninput="document.getElementById('tsLabel').innerText=this.value">
@@ -308,8 +308,8 @@ a{color:#6bf}
 
 <script>
 const SENSOR_NAMES = [
-  "S0 (36) Far Left", "S1 (39) Near Left", "S2 (34) Center",
-  "S3 (35) Near Right", "S4 (32) Far Right"
+  "S0 (32) Far Left", "S1 (33) Near Left", "S2 (34) Center",
+  "S3 (35) Near Right", "S4 (39/VN) Far Right"
 ];
 let pollId=null,calibId=null;
 
@@ -526,8 +526,21 @@ async function saveAll(){
 
 async function saveAndRun(){
   if(!confirm('Save parameters and reboot to Ready state?'))return;
-  status('Rebooting...','warn');
-  try{await fetch('/api/saveandrun',{method:'POST'})}catch(e){}
+  status('Saving parameters and rebooting...','warn');
+  const b=new URLSearchParams({
+    kp:$('rng_kp').value,ki:$('rng_ki').value,kd:$('rng_kd').value,
+    baseSpeed:$('rng_base').value,minSpeed:$('rng_min').value,maxSpeed:$('rng_max').value,
+    invertLine:$('sel_pol').value,
+    navMode:$('sel_nav').value,
+    customPath:$('txt_route').value
+  });
+  for(let i=0; i<5; i++){
+    b.append('thresh'+i, $('sl_th'+i).value);
+  }
+  try{
+    await fetch('/api/params',{method:'POST',body:b});
+    await fetch('/api/saveandrun',{method:'POST'});
+  }catch(e){}
 }
 
 async function resetDef(){
@@ -601,9 +614,8 @@ void initWebPortal() {
         // Feed motor safety watchdog
         notifyMotorSafetyFeed();
 
-        // Calculate normalized values & position
-        int16_t dummyL = 0, dummyR = 0;
-        g_pid.compute(raw, dummyL, dummyR);
+        // Calculate normalized values & position without moving motors or executing turns
+        g_pid.updateSensorsOnly(raw);
         SensorReadings sr = g_pid.getReadings();
 
         char json[550];
@@ -762,12 +774,9 @@ void initWebPortal() {
         saveParameters(g_params);
         emergencyStop();
 
-        // Ensure next boot counter does not land on calibration interval
-        uint32_t bc = getBootCount();
-        if ((bc + 1) % CALIBRATION_BOOT_INTERVAL == 0) {
-            resetBootCount();
-            incrementBootCount();
-        }
+        // Set boot counter to 1 so next boot increments to 2 (guaranteed RUNNING mode)
+        resetBootCount();
+        incrementBootCount();
 
         s_rebootPending = true;
         s_rebootTime = millis() + 1000;

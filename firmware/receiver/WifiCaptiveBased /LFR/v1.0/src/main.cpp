@@ -22,22 +22,15 @@ static bool s_hasValidCalibration = false;
 
 static uint32_t s_runStartTime = 0;
 static uint32_t s_runDuration = 0;
+static uint32_t s_lastLoopTick = 0;
 
 // LED Blinker helper
 static uint32_t s_lastLedToggle = 0;
 static bool s_ledState = false;
 
 static void updateStatusLed() {
-    uint32_t now = millis();
-    if (s_mode == MODE_CALIBRATION) {
-        // Fast blink: 100ms interval (Calibration active)
-        if (now - s_lastLedToggle >= 100) {
-            s_lastLedToggle = now;
-            s_ledState = !s_ledState;
-            digitalWrite(STATUS_LED_PIN, s_ledState ? HIGH : LOW);
-        }
-    }
-    // In running mode, GPIO 2 is used as analog sensor S4 (Center). Do not drive it!
+    // Note: GPIO 2 is hardwired to TB6612 AIN2 (Motor A Direction 2).
+    // It must not be toggled as a software LED blinker, as that directly pulses Motor A direction/brake!
 }
 
 // Check if BOOT button is held down at startup or during run
@@ -64,8 +57,6 @@ void setup() {
     Serial.println("==============================================");
 
     // Pin configuration
-    pinMode(STATUS_LED_PIN, OUTPUT);
-    digitalWrite(STATUS_LED_PIN, LOW);
     pinMode(BOOT_BUTTON_PIN, INPUT_PULLUP);
 
     // 9-sensor array — all 9 sensors initialized as INPUT
@@ -113,8 +104,8 @@ void setup() {
     }
 
     if (s_mode == MODE_CALIBRATION) {
-        // Put TB6612 into standby mode so status LED blinker on GPIO 2 doesn't energize Motor A
-        setMotorStandby(true);
+        // Calibration mode: Enable TB6612 driver so bench motor tests are active
+        setMotorStandby(false);
         initWebPortal();
         emergencyStop();
     } else {
@@ -186,10 +177,12 @@ void loop() {
                 }
 
                 s_runStartTime = millis();
+                s_lastLoopTick = millis();
                 s_runState = RUN_STATE_ACTIVE;
                 g_pid.reset();
                 notifyMotorSafetyFeed();
                 Serial.println("[START] GO! Run timer started. Max duration: 10 minutes.");
+                return;
             } else if (s_runState == RUN_STATE_FINISHED) {
                 // If robot discovered a simplified shortest path in autonomous run:
                 const char* solved = g_pid.getSolvedPath();
@@ -206,6 +199,7 @@ void loop() {
                 g_pid.reset();
                 emergencyStop();
                 Serial.println("[LFR] Reset to READY state at Zone A.");
+                return;
             }
         }
 
@@ -219,13 +213,13 @@ void loop() {
         // ====================================================================
         //  ACTIVE RUN: 100Hz (10ms) PID Line Following & Maze Navigation Loop
         // ====================================================================
-        static uint32_t s_lastLoopTick = 0;
+        now = millis();
 
         if (now - s_lastLoopTick >= (1000 / LOOP_RATE_HZ)) {
             s_lastLoopTick = now;
 
             // Check 10-minute maximum run duration rule
-            if (now - s_runStartTime > (10UL * 60UL * 1000UL)) {
+            if (now >= s_runStartTime && (now - s_runStartTime > (10UL * 60UL * 1000UL))) {
                 emergencyStop();
                 s_runState = RUN_STATE_FINISHED;
                 s_runDuration = now - s_runStartTime;

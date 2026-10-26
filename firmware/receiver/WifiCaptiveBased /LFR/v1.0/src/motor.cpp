@@ -3,6 +3,8 @@
 
 static uint32_t s_lastFeedTime = 0;
 static bool s_isSafetyHalted = false;
+static bool s_isTestMode = false;
+static uint32_t s_testStartTime = 0;
 
 static void writePwmLeft(uint8_t duty) {
 #if defined(ESP_ARDUINO_VERSION) && ESP_ARDUINO_VERSION >= ESP_ARDUINO_VERSION_VAL(3, 0, 0)
@@ -48,6 +50,7 @@ void initMotors() {
     writePwmRight(0);
     s_lastFeedTime = millis();
     s_isSafetyHalted = false;
+    s_isTestMode = false;
 
     Serial.println("[MOTOR] TB6612FNG Motors initialized (5kHz, 8-bit PWM).");
 }
@@ -58,6 +61,7 @@ void setMotorStandby(bool standby) {
 
 void setMotorSpeed(int16_t leftSpeed, int16_t rightSpeed) {
     digitalWrite(STBY_PIN, HIGH);
+    s_isTestMode = false;
 
     // Left motor direction & PWM
     if (leftSpeed > 0) {
@@ -101,12 +105,23 @@ void emergencyStop() {
     digitalWrite(IN4_PIN, LOW);
     writePwmLeft(0);
     writePwmRight(0);
+    s_isTestMode = false;
 }
 
 void testMotor(const String& action, int16_t speed) {
-    digitalWrite(STBY_PIN, HIGH);
     speed = constrain(speed, 0, 255);
     Serial.printf("[MOTOR TEST] Action='%s', Speed=%d\n", action.c_str(), speed);
+
+    if (action == "stop" || speed == 0) {
+        emergencyStop();
+        return;
+    }
+
+    // Enable TB6612 H-bridge
+    digitalWrite(STBY_PIN, HIGH);
+    s_isTestMode = true;
+    s_testStartTime = millis();
+    s_isSafetyHalted = false;
 
     if (action == "lf") {
         // Left Forward
@@ -161,7 +176,6 @@ void testMotor(const String& action, int16_t speed) {
         digitalWrite(IN4_PIN, HIGH);
         writePwmRight((uint8_t)speed);
     } else {
-        // Stop
         emergencyStop();
     }
 }
@@ -172,7 +186,20 @@ void notifyMotorSafetyFeed() {
 }
 
 bool checkMotorSafety() {
-    if (millis() - s_lastFeedTime > MOTOR_SAFETY_TIMEOUT_MS) {
+    uint32_t now = millis();
+
+    // In interactive bench test mode, allow up to 10 seconds per test command without requiring sensor polling
+    if (s_isTestMode) {
+        if (now - s_testStartTime > 10000) {
+            Serial.println("[MOTOR TEST] Auto-stopped bench motor test after 10s safety timeout.");
+            emergencyStop();
+            return false;
+        }
+        return true;
+    }
+
+    // In running mode, require sensor updates at least every 500ms
+    if (now - s_lastFeedTime > MOTOR_SAFETY_TIMEOUT_MS) {
         if (!s_isSafetyHalted) {
             Serial.println("[MOTOR SAFETY] Timeout! No sensor updates > 500ms. Halting motors.");
             emergencyStop();

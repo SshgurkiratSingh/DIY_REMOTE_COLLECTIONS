@@ -51,6 +51,9 @@ public:
     void compute(const uint16_t raw[NUM_SENSORS],
                  int16_t& outLeftSpeed, int16_t& outRightSpeed);
 
+    // Fast, non-blocking telemetry update for portal/monitoring (does NOT drive motors, execute turns, or block)
+    void updateSensorsOnly(const uint16_t raw[NUM_SENSORS]);
+
     // Normalize raw reading based on calibration parameters
     uint16_t normalizeSensor(uint16_t raw, uint16_t minVal, uint16_t maxVal, bool invert);
 

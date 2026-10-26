@@ -612,9 +612,8 @@ void initWebPortal() {
 
         notifyMotorSafetyFeed();
 
-        // Compute position + status using ADC1-only (adc2Available = false)
-        int16_t dummyL = 0, dummyR = 0;
-        g_pid.compute(rawAll, false, dummyL, dummyR);
+        // Update sensor telemetry using ADC1-only (adc2Available = false) without moving motors
+        g_pid.updateSensorsOnly(rawAll, false);
         SensorReadings sr = g_pid.getReadings();
 
         // Build compact JSON with all 9 sensor arrays

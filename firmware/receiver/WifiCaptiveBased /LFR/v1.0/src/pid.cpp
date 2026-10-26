@@ -176,8 +176,8 @@ void PIDController::executeTurn(TurnAction action) {
         while (millis() - start < TURN_TIMEOUT_MS) {
             uint16_t rawC  = analogRead(SENSOR_CENTER_PIN);
             uint16_t normC = normalizeSensor(rawC,
-                                             m_params.sensors[3].minVal,
-                                             m_params.sensors[3].maxVal, invert);
+                                             m_params.sensors[4].minVal,
+                                             m_params.sensors[4].maxVal, invert);
             if (normC > 500) break;
             notifyMotorSafetyFeed();
             delay(5);
@@ -193,8 +193,8 @@ void PIDController::executeTurn(TurnAction action) {
         while (millis() - start < TURN_TIMEOUT_MS) {
             uint16_t rawC  = analogRead(SENSOR_CENTER_PIN);
             uint16_t normC = normalizeSensor(rawC,
-                                             m_params.sensors[3].minVal,
-                                             m_params.sensors[3].maxVal, invert);
+                                             m_params.sensors[4].minVal,
+                                             m_params.sensors[4].maxVal, invert);
             if (normC > 500) break;
             notifyMotorSafetyFeed();
             delay(5);
@@ -210,8 +210,8 @@ void PIDController::executeTurn(TurnAction action) {
         while (millis() - start < TURN_TIMEOUT_MS) {
             uint16_t rawC  = analogRead(SENSOR_CENTER_PIN);
             uint16_t normC = normalizeSensor(rawC,
-                                             m_params.sensors[3].minVal,
-                                             m_params.sensors[3].maxVal, invert);
+                                             m_params.sensors[4].minVal,
+                                             m_params.sensors[4].maxVal, invert);
             if (normC > 500) break;
             notifyMotorSafetyFeed();
             delay(5);
@@ -226,6 +226,47 @@ void PIDController::executeTurn(TurnAction action) {
 }
 
 // ---------------------------------------------------------------------------
+//  updateSensorsOnly() — Fast, non-blocking telemetry update for portal/monitoring
+//  (never moves motors, never executes turns, never blocks with delays)
+// ---------------------------------------------------------------------------
+void PIDController::updateSensorsOnly(const uint16_t raw[NUM_SENSORS], bool adc2Available) {
+    bool invert = (m_params.invertLine != 0);
+    static const bool S_IS_ADC1[NUM_SENSORS] = SENSOR_IS_ADC1;
+    static const int32_t WEIGHTS[NUM_SENSORS] = SENSOR_WEIGHTS;
+
+    int64_t weightedSum = 0;
+    uint32_t totalNorm  = 0;
+
+    for (uint8_t i = 0; i < NUM_SENSORS; i++) {
+        if (adc2Available || S_IS_ADC1[i]) {
+            m_readings.raw[i]  = raw[i];
+            m_readings.norm[i] = normalizeSensor(raw[i],
+                                                 m_params.sensors[i].minVal,
+                                                 m_params.sensors[i].maxVal, invert);
+            m_readings.onLine[i] = invert
+                ? (raw[i] <= m_params.sensors[i].thresh)
+                : (raw[i] >= m_params.sensors[i].thresh);
+
+            weightedSum += (int64_t)WEIGHTS[i] * m_readings.norm[i];
+            totalNorm   += m_readings.norm[i];
+        } else {
+            m_readings.raw[i]    = 0;
+            m_readings.norm[i]   = 0;
+            m_readings.onLine[i] = false;
+        }
+    }
+
+    if (totalNorm > 0) {
+        m_readings.position = (int16_t)(weightedSum / (int64_t)totalNorm);
+        m_lastKnownPosition = m_readings.position;
+        m_readings.status   = LINE_ON_TRACK;
+    } else {
+        m_readings.position = m_lastKnownPosition;
+        m_readings.status   = LINE_LOST_STOPPED;
+    }
+}
+
+// ---------------------------------------------------------------------------
 //  compute() — 9-sensor weighted PID
 //
 //  raw[NUM_SENSORS]: ADC readings.
@@ -235,6 +276,14 @@ void PIDController::executeTurn(TurnAction action) {
 void PIDController::compute(const uint16_t raw[NUM_SENSORS], bool adc2Available,
                             int16_t& outLeftSpeed, int16_t& outRightSpeed) {
     if (m_readings.runFinished) {
+        outLeftSpeed  = 0;
+        outRightSpeed = 0;
+        return;
+    }
+
+    // Safety guard: If ADC2 is not available (WiFi calibration mode), NEVER navigate or drive motors!
+    if (!adc2Available) {
+        updateSensorsOnly(raw, false);
         outLeftSpeed  = 0;
         outRightSpeed = 0;
         return;
@@ -380,8 +429,8 @@ void PIDController::compute(const uint16_t raw[NUM_SENSORS], bool adc2Available,
             delay(JUNCTION_INCH_TIME_MS);
             notifyMotorSafetyFeed();
             uint16_t afterC = normalizeSensor(analogRead(SENSOR_CENTER_PIN),
-                                              m_params.sensors[3].minVal,
-                                              m_params.sensors[3].maxVal, invert);
+                                              m_params.sensors[4].minVal,
+                                              m_params.sensors[4].maxVal, invert);
             TurnAction action = decideTurnAtJunction(true, afterC > 450, false);
             executeTurn(action);
             outLeftSpeed  = m_params.baseSpeed;
@@ -394,8 +443,8 @@ void PIDController::compute(const uint16_t raw[NUM_SENSORS], bool adc2Available,
             delay(JUNCTION_INCH_TIME_MS);
             notifyMotorSafetyFeed();
             uint16_t afterC = normalizeSensor(analogRead(SENSOR_CENTER_PIN),
-                                              m_params.sensors[3].minVal,
-                                              m_params.sensors[3].maxVal, invert);
+                                              m_params.sensors[4].minVal,
+                                              m_params.sensors[4].maxVal, invert);
             TurnAction action = decideTurnAtJunction(false, afterC > 450, true);
             executeTurn(action);
             outLeftSpeed  = m_params.baseSpeed;

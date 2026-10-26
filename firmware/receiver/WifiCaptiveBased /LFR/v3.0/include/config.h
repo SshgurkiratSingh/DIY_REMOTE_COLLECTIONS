@@ -9,14 +9,24 @@
 #define LFR_VERSION             "v3.0 (5-IR Array)"
 
 // ----------------------------------------------------------------------------
-//  L298N Motor Driver Pins
+//  TB6612FNG Dual H-Bridge Motor Driver Pins
 // ----------------------------------------------------------------------------
-#define ENA_PIN                 25   // PWM speed control for Left Motor
-#define IN1_PIN                 26   // Direction control 1 for Left Motor
-#define IN2_PIN                 27   // Direction control 2 for Left Motor
-#define ENB_PIN                 14   // PWM speed control for Right Motor
-#define IN3_PIN                 12   // Direction control 1 for Right Motor
-#define IN4_PIN                 13   // Direction control 2 for Right Motor
+#define MOTOR_PWMA_PIN          13   // PWM speed control for Left Motor (Motor A)
+#define MOTOR_AIN1_PIN          27   // Direction control 1 for Left Motor (Ain 1)
+#define MOTOR_AIN2_PIN          14   // Direction control 2 for Left Motor (Ain 2)
+#define MOTOR_STBY_PIN          26   // Standby control (HIGH = enabled, LOW = standby)
+#define MOTOR_BIN1_PIN          25   // Direction control 1 for Right Motor (Bin 1)
+#define MOTOR_BIN2_PIN          16   // Direction control 2 for Right Motor (Bin 2)
+#define MOTOR_PWMB_PIN          12   // PWM speed control for Right Motor (Motor B)
+
+// Aliases for compatibility
+#define ENA_PIN                 MOTOR_PWMA_PIN
+#define IN1_PIN                 MOTOR_AIN1_PIN
+#define IN2_PIN                 MOTOR_AIN2_PIN
+#define STBY_PIN                MOTOR_STBY_PIN
+#define IN3_PIN                 MOTOR_BIN1_PIN
+#define IN4_PIN                 MOTOR_BIN2_PIN
+#define ENB_PIN                 MOTOR_PWMB_PIN
 
 // ----------------------------------------------------------------------------
 //  5x IR Line Tracking Sensor Pins (Left S0 to Right S4)
@@ -25,18 +35,19 @@
 #define NUM_SENSORS             5
 
 // Sensors S0 to S4 ordered from Robot Left to Robot Right:
-// S0: Far Left       (GPIO 36 - ADC1_CH0)
-// S1: Near Left      (GPIO 39 - ADC1_CH3)
+// S0: Far Left       (GPIO 32 - ADC1_CH4)
+// S1: Near Left      (GPIO 33 - ADC1_CH5)
 // S2: Center         (GPIO 34 - ADC1_CH6)
 // S3: Near Right     (GPIO 35 - ADC1_CH7)
-// S4: Far Right      (GPIO 32 - ADC1_CH4)
-#define SENSOR_PIN_0            36
-#define SENSOR_PIN_1            39
+// S4: Far Right      (GPIO 39 - ADC1_CH3 / VN)
+#define SENSOR_PIN_0            32
+#define SENSOR_PIN_1            33
 #define SENSOR_PIN_2            34
 #define SENSOR_PIN_3            35
-#define SENSOR_PIN_4            32
+#define SENSOR_PIN_4            39   // VN pin on ESP32 DevKit
 
-#define SENSOR_CENTER_INDEX     2    // Index of the center sensor (S2)
+#define SENSOR_CENTER_INDEX     2    // Index of the center sensor (S2 - GPIO 34)
+#define SENSOR_CENTER_PIN       SENSOR_PIN_2
 
 static const uint8_t SENSOR_PINS[NUM_SENSORS] = {
     SENSOR_PIN_0, SENSOR_PIN_1, SENSOR_PIN_2, SENSOR_PIN_3, SENSOR_PIN_4
@@ -114,7 +125,7 @@ static const uint8_t SENSOR_PINS[NUM_SENSORS] = {
 #define JUNCTION_INCH_TIME_MS   110    // Inching time to align wheels with junction
 #define TURN_SPEED              140    // PWM speed during pivot turns and U-turns
 #define TURN_TIMEOUT_MS         2000   // Timeout for in-place turns
-#define END_ZONE_INCH_MS        200    // Inching duration to confirm Zone B large black square
+#define END_ZONE_INCH_MS        450    // Inching duration to confirm Zone B large black square
 #define CHECKPOINT_DEBOUNCE_MS  1000   // Minimum time between checkpoint triggers
 #define LINE_LOST_TIMEOUT_MS    1500   // Search timeout when line is lost
 

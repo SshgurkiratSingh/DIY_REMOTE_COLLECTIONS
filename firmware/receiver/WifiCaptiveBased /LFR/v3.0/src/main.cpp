@@ -125,6 +125,7 @@ void setup() {
     }
 
     if (s_mode == MODE_CALIBRATION) {
+        setMotorStandby(false); // Enable TB6612 H-bridge for bench motor tests
         initWebPortal();
         emergencyStop();
     } else {
@@ -195,6 +196,14 @@ void loop() {
                 g_pid.reset();
                 notifyMotorSafetyFeed();
                 Serial.println("[START] GO! Run timer started. Max duration: 10 minutes.");
+                return;
+            } else if (s_runState == RUN_STATE_ACTIVE) {
+                // ABORT HANDLER: Stop robot immediately on short press while running
+                emergencyStop();
+                s_runState = RUN_STATE_READY;
+                g_pid.reset();
+                Serial.println("[ABORT] Run aborted via physical BOOT button. Motors halted. Ready at Zone A.");
+                return;
             } else if (s_runState == RUN_STATE_FINISHED) {
                 // If robot discovered a simplified shortest path in autonomous run:
                 const char* solved = g_pid.getSolvedPath();
@@ -211,6 +220,7 @@ void loop() {
                 g_pid.reset();
                 emergencyStop();
                 Serial.println("[LFR] Reset to READY state at Zone A.");
+                return;
             }
         }
 
@@ -269,7 +279,7 @@ void loop() {
                     return;
                 }
 
-                // Drive L298N motors
+                // Drive TB6612FNG motors
                 setMotorSpeed(leftSpeed, rightSpeed);
 
                 // Periodic telemetry debug output (every 500ms)
