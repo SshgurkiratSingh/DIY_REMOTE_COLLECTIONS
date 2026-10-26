@@ -292,8 +292,8 @@ a{color:#6bf}
   <!-- MOTORS -->
   <div id="p-motors" class="pane">
     <div class="sec">
-      <div class="sec-title">Motor Test</div>
-      <p style="font-size:12px;color:#777;margin-bottom:8px">Verify L298N wiring. Each button runs one motor at the selected speed.</p>
+      <div class="sec-title">Motor Test &middot; TB6612FNG Dual H-Bridge</div>
+      <p style="font-size:12px;color:#777;margin-bottom:8px">Verify TB6612FNG wiring and wheel rotation. STBY (GPIO 22) is automatically pulled HIGH during active motor tests.</p>
       <div class="field">
         <label>Test Speed: <span class="mono" id="tsLabel">120</span></label>
         <input type="range" id="testSpeed" min="40" max="255" value="120" oninput="document.getElementById('tsLabel').innerText=this.value">
@@ -306,6 +306,21 @@ a{color:#6bf}
       </div>
       <button class="btn" onclick="mt('forward')">Both Forward</button>
       <button class="btn btn-stop" onclick="mt('stop')">STOP</button>
+
+      <div style="margin-top:10px;border-top:1px solid #222;padding-top:8px">
+        <div class="sec-title" style="margin-bottom:4px">TB6612FNG Wiring Reference</div>
+        <table class="rv-table" style="font-size:11px">
+          <tr><th>Signal</th><th>ESP32 GPIO</th><th>Function</th></tr>
+          <tr><td>PWMA</td><td>GPIO 12 (D12)</td><td>Motor A (Left) Speed PWM</td></tr>
+          <tr><td>AIN1</td><td>GPIO 4 (D4)</td><td>Motor A Direction 1</td></tr>
+          <tr><td>AIN2</td><td>GPIO 2 (D2)</td><td>Motor A Direction 2 (LED)</td></tr>
+          <tr><td>PWMB</td><td>GPIO 13 (D13)</td><td>Motor B (Right) Speed PWM</td></tr>
+          <tr><td>BIN1</td><td>GPIO 15 (D15)</td><td>Motor B Direction 1</td></tr>
+          <tr><td>BIN2</td><td>GPIO 23 (D23)</td><td>Motor B Direction 2</td></tr>
+          <tr><td>STBY</td><td>GPIO 22 (D22)</td><td>Standby (HIGH = Enable)</td></tr>
+          <tr><td>VM / VCC</td><td>Power Rails</td><td>VM = Battery (Max 12.6V), VCC = 3.3V/5V</td></tr>
+        </table>
+      </div>
     </div>
   </div>
 
@@ -464,6 +479,7 @@ async function loadParams(){
       sRows+
       '<tr><td>PID</td><td>'+d.kp+' / '+d.ki+' / '+d.kd+'</td></tr>'+
       '<tr><td>Speed</td><td>'+d.baseSpeed+' ('+d.minSpeed+'-'+d.maxSpeed+')</td></tr>'+
+      '<tr><td>Driver</td><td>TB6612FNG Dual H-Bridge</td></tr>'+
       '<tr><td>Polarity</td><td>'+(d.invertLine==0?'Black on white':'White on black')+'</td></tr>'+
       '<tr><td>Boot #</td><td>'+d.bootCount+'</td></tr>';
   }catch(e){}

@@ -270,7 +270,7 @@ void loop() {
                     return;
                 }
 
-                // Drive L298N motors
+                // Drive TB6612FNG motors
                 setMotorSpeed(leftSpeed, rightSpeed);
 
                 // Periodic telemetry (every 500ms) — print all 9 sensor norms
