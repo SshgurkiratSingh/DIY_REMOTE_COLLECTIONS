@@ -63,9 +63,26 @@ void setMotorStandby(bool standby) {
     }
 }
 
+#include "calibration.h"
+
 void setMotorSpeed(int16_t leftSpeed, int16_t rightSpeed) {
     digitalWrite(STBY_PIN, HIGH);
     s_isTestMode = false;
+
+    // Handle motor channel swap if configured
+    if (g_params.swapMotors) {
+        int16_t tmp = leftSpeed;
+        leftSpeed = rightSpeed;
+        rightSpeed = tmp;
+    }
+
+    // Handle motor direction inversion
+    if (g_params.invertLeftMotor) {
+        leftSpeed = -leftSpeed;
+    }
+    if (g_params.invertRightMotor) {
+        rightSpeed = -rightSpeed;
+    }
 
     // Left motor (Motor A) direction & PWM
     if (leftSpeed > 0) {
@@ -128,61 +145,22 @@ void testMotor(const String& action, int16_t speed) {
     s_isSafetyHalted = false;
 
     if (action == "lf") {
-        // Left Forward
-        digitalWrite(IN1_PIN, HIGH);
-        digitalWrite(IN2_PIN, LOW);
-        writePwmLeft((uint8_t)speed);
-        // Right Stop
-        digitalWrite(IN3_PIN, LOW);
-        digitalWrite(IN4_PIN, LOW);
-        writePwmRight(0);
+        setMotorSpeed(speed, 0);
     } else if (action == "lr") {
-        // Left Reverse
-        digitalWrite(IN1_PIN, LOW);
-        digitalWrite(IN2_PIN, HIGH);
-        writePwmLeft((uint8_t)speed);
-        // Right Stop
-        digitalWrite(IN3_PIN, LOW);
-        digitalWrite(IN4_PIN, LOW);
-        writePwmRight(0);
+        setMotorSpeed(-speed, 0);
     } else if (action == "rf") {
-        // Right Forward
-        digitalWrite(IN3_PIN, HIGH);
-        digitalWrite(IN4_PIN, LOW);
-        writePwmRight((uint8_t)speed);
-        // Left Stop
-        digitalWrite(IN1_PIN, LOW);
-        digitalWrite(IN2_PIN, LOW);
-        writePwmLeft(0);
+        setMotorSpeed(0, speed);
     } else if (action == "rr") {
-        // Right Reverse
-        digitalWrite(IN3_PIN, LOW);
-        digitalWrite(IN4_PIN, HIGH);
-        writePwmRight((uint8_t)speed);
-        // Left Stop
-        digitalWrite(IN1_PIN, LOW);
-        digitalWrite(IN2_PIN, LOW);
-        writePwmLeft(0);
-    } else if (action == "forward") {
-        // Both Forward
-        digitalWrite(IN1_PIN, HIGH);
-        digitalWrite(IN2_PIN, LOW);
-        writePwmLeft((uint8_t)speed);
-        digitalWrite(IN3_PIN, HIGH);
-        digitalWrite(IN4_PIN, LOW);
-        writePwmRight((uint8_t)speed);
-    } else if (action == "reverse") {
-        // Both Reverse
-        digitalWrite(IN1_PIN, LOW);
-        digitalWrite(IN2_PIN, HIGH);
-        writePwmLeft((uint8_t)speed);
-        digitalWrite(IN3_PIN, LOW);
-        digitalWrite(IN4_PIN, HIGH);
-        writePwmRight((uint8_t)speed);
+        setMotorSpeed(0, -speed);
+    } else if (action == "forward" || action == "fwd") {
+        setMotorSpeed(speed, speed);
+    } else if (action == "reverse" || action == "rev") {
+        setMotorSpeed(-speed, -speed);
     } else {
-        // Stop
         emergencyStop();
     }
+    // Re-assert test mode because setMotorSpeed clears it
+    s_isTestMode = true;
 }
 
 void notifyMotorSafetyFeed() {

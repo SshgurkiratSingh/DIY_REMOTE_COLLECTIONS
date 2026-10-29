@@ -94,11 +94,12 @@ void PIDController::updateSensorsOnly(const uint16_t raw[NUM_SENSORS]) {
             countOnLine++;
         }
 
-        sum += norm;
-        weightedSum += (SENSOR_WEIGHTS[i] * (int32_t)norm);
+        uint16_t effectiveNorm = (norm >= LINE_NOISE_FLOOR) ? norm : 0;
+        sum += effectiveNorm;
+        weightedSum += (SENSOR_WEIGHTS[i] * (int32_t)effectiveNorm);
     }
 
-    if (sum > 0) {
+    if (sum >= LINE_MIN_SUM) {
         m_readings.position = (int16_t)(weightedSum / (int32_t)sum);
         m_lastKnownPosition = m_readings.position;
         m_readings.status = LINE_ON_TRACK;
@@ -206,6 +207,7 @@ void PIDController::executeTurn(TurnAction action) {
 
     m_readings.status = LINE_TURNING;
     int16_t turnSpd = TURN_SPEED;
+    uint8_t centerPin = (m_params.sensorPins[SENSOR_CENTER_INDEX] != 0) ? m_params.sensorPins[SENSOR_CENTER_INDEX] : SENSOR_CENTER_PIN;
 
     if (action == TURN_LEFT_90) {
         if (recordTurn) logTurn('L');
@@ -216,14 +218,21 @@ void PIDController::executeTurn(TurnAction action) {
         notifyMotorSafetyFeed();
 
         uint32_t start = millis();
+        bool acquired = false;
         while (millis() - start < TURN_TIMEOUT_MS) {
-            uint16_t rawC = readSensorRaw(SENSOR_CENTER_PIN); // S2 (GPIO 34) is Center
+            uint16_t rawC = readSensorRaw(centerPin);
             uint16_t normC = normalizeSensor(rawC, m_params.minVal[SENSOR_CENTER_INDEX], m_params.maxVal[SENSOR_CENTER_INDEX], m_params.invertLine != 0);
             if (normC > 500) {
+                acquired = true;
                 break; // Center sensor re-acquired line
             }
             notifyMotorSafetyFeed();
             delay(5);
+        }
+        if (!acquired) {
+            Serial.println("[NAV] Left turn timed out without line re-acquisition. Returning...");
+            setMotorSpeed(turnSpd, -turnSpd);
+            delay(150);
         }
     } else if (action == TURN_RIGHT_90) {
         if (recordTurn) logTurn('R');
@@ -234,14 +243,21 @@ void PIDController::executeTurn(TurnAction action) {
         notifyMotorSafetyFeed();
 
         uint32_t start = millis();
+        bool acquired = false;
         while (millis() - start < TURN_TIMEOUT_MS) {
-            uint16_t rawC = readSensorRaw(SENSOR_CENTER_PIN); // S2 (GPIO 34) is Center
+            uint16_t rawC = readSensorRaw(centerPin);
             uint16_t normC = normalizeSensor(rawC, m_params.minVal[SENSOR_CENTER_INDEX], m_params.maxVal[SENSOR_CENTER_INDEX], m_params.invertLine != 0);
             if (normC > 500) {
+                acquired = true;
                 break; // Center sensor re-acquired line
             }
             notifyMotorSafetyFeed();
             delay(5);
+        }
+        if (!acquired) {
+            Serial.println("[NAV] Right turn timed out without line re-acquisition. Returning...");
+            setMotorSpeed(-turnSpd, turnSpd);
+            delay(150);
         }
     } else if (action == TURN_UTURN_180) {
         if (recordTurn) logTurn('B');
@@ -253,7 +269,7 @@ void PIDController::executeTurn(TurnAction action) {
 
         uint32_t start = millis();
         while (millis() - start < TURN_TIMEOUT_MS) {
-            uint16_t rawC = readSensorRaw(SENSOR_CENTER_PIN); // S2 (GPIO 34) is Center
+            uint16_t rawC = readSensorRaw(centerPin);
             uint16_t normC = normalizeSensor(rawC, m_params.minVal[SENSOR_CENTER_INDEX], m_params.maxVal[SENSOR_CENTER_INDEX], m_params.invertLine != 0);
             if (normC > 500) {
                 break; // Center sensor re-acquired line
@@ -286,6 +302,8 @@ void PIDController::compute(const uint16_t raw[NUM_SENSORS],
     int32_t weightedSum = 0;
     uint8_t countOnLine = 0;
 
+    uint8_t centerPin = (m_params.sensorPins[SENSOR_CENTER_INDEX] != 0) ? m_params.sensorPins[SENSOR_CENTER_INDEX] : SENSOR_CENTER_PIN;
+
     for (int i = 0; i < NUM_SENSORS; i++) {
         uint16_t norm = normalizeSensor(raw[i], m_params.minVal[i], m_params.maxVal[i], invert);
         m_readings.raw[i] = raw[i];
@@ -301,8 +319,9 @@ void PIDController::compute(const uint16_t raw[NUM_SENSORS],
             countOnLine++;
         }
 
-        sum += norm;
-        weightedSum += (SENSOR_WEIGHTS[i] * (int32_t)norm);
+        uint16_t effectiveNorm = (norm >= LINE_NOISE_FLOOR) ? norm : 0;
+        sum += effectiveNorm;
+        weightedSum += (SENSOR_WEIGHTS[i] * (int32_t)effectiveNorm);
     }
 
     // ========================================================================
@@ -351,7 +370,7 @@ void PIDController::compute(const uint16_t raw[NUM_SENSORS],
     // ========================================================================
     //  Case 2: DEAD END (All sensors on white)
     // ========================================================================
-    if (countOnLine == 0 && sum < 250) {
+    if (countOnLine == 0 && sum < LINE_MIN_SUM) {
         if (!m_wasLineLost) {
             m_wasLineLost = true;
             m_lineLostStartTime = millis();
@@ -363,8 +382,9 @@ void PIDController::compute(const uint16_t raw[NUM_SENSORS],
             // Re-read sensors to confirm true dead end
             uint32_t confirmSum = 0;
             for (int i = 0; i < NUM_SENSORS; i++) {
-                uint16_t cVal = normalizeSensor(readSensorRaw(SENSOR_PINS[i]), m_params.minVal[i], m_params.maxVal[i], invert);
-                confirmSum += cVal;
+                uint8_t pin = (m_params.sensorPins[i] != 0) ? m_params.sensorPins[i] : SENSOR_PINS[i];
+                uint16_t cVal = normalizeSensor(readSensorRaw(pin), m_params.minVal[i], m_params.maxVal[i], invert);
+                confirmSum += (cVal >= LINE_NOISE_FLOOR) ? cVal : 0;
             }
 
             if (confirmSum < 300) {
@@ -381,12 +401,13 @@ void PIDController::compute(const uint16_t raw[NUM_SENSORS],
         uint32_t lostDuration = millis() - m_lineLostStartTime;
         if (lostDuration < LINE_LOST_TIMEOUT_MS) {
             m_readings.status = LINE_RECOVERY;
+            int16_t revSpeed = (m_params.minSpeed < 0) ? -(m_params.baseSpeed / 2) : m_params.minSpeed;
             if (m_lastKnownPosition < 0) {
-                outLeftSpeed = -(m_params.baseSpeed / 2);
+                outLeftSpeed = revSpeed;
                 outRightSpeed = m_params.baseSpeed;
             } else {
                 outLeftSpeed = m_params.baseSpeed;
-                outRightSpeed = -(m_params.baseSpeed / 2);
+                outRightSpeed = revSpeed;
             }
         } else {
             m_readings.status = LINE_LOST_STOPPED;
@@ -403,8 +424,9 @@ void PIDController::compute(const uint16_t raw[NUM_SENSORS],
     //  Case 3: TURNS & JUNCTIONS (Maze Navigation: Left, Right, T, 4-Way Cross)
     // ========================================================================
     if (m_params.navMode != NAV_MODE_PID_LINE) {
-        bool leftDetected = (m_readings.norm[0] > 550);
-        bool rightDetected = (m_readings.norm[4] > 550);
+        // True 90-degree branch requires outer + near sensors active
+        bool leftDetected = (m_readings.norm[0] > 600 && m_readings.norm[1] > 400);
+        bool rightDetected = (m_readings.norm[4] > 600 && m_readings.norm[3] > 400);
 
         if (leftDetected || rightDetected) {
             // Inch forward to place drive axle over junction center
@@ -413,7 +435,7 @@ void PIDController::compute(const uint16_t raw[NUM_SENSORS],
             notifyMotorSafetyFeed();
 
             // Re-read center sensor after inching to check if forward path exists
-            uint16_t afterC = normalizeSensor(readSensorRaw(SENSOR_CENTER_PIN),
+            uint16_t afterC = normalizeSensor(readSensorRaw(centerPin),
                                               m_params.minVal[SENSOR_CENTER_INDEX],
                                               m_params.maxVal[SENSOR_CENTER_INDEX], invert);
             bool canStraight = (afterC > 400);
@@ -440,7 +462,7 @@ void PIDController::compute(const uint16_t raw[NUM_SENSORS],
     // Position = Sum(Weight[i] * Norm[i]) / Sum(Norm[i])
     // Output range: -2000 to +2000
     int16_t position = 0;
-    if (sum > 0) {
+    if (sum >= LINE_MIN_SUM) {
         position = (int16_t)(weightedSum / (int32_t)sum);
     } else {
         position = m_lastKnownPosition;

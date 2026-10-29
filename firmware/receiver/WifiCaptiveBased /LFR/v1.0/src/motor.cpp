@@ -185,7 +185,7 @@ void notifyMotorSafetyFeed() {
     s_isSafetyHalted = false;
 }
 
-bool checkMotorSafety() {
+bool checkMotorSafety(bool isRunningMode) {
     uint32_t now = millis();
 
     // In interactive bench test mode, allow up to 10 seconds per test command without requiring sensor polling
@@ -195,6 +195,11 @@ bool checkMotorSafety() {
             emergencyStop();
             return false;
         }
+        return true;
+    }
+
+    // In calibration mode when not testing motors, motors are already stopped
+    if (!isRunningMode) {
         return true;
     }
 

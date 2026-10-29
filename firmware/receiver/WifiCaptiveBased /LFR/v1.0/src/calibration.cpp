@@ -1,5 +1,6 @@
 #include "calibration.h"
 #include <Preferences.h>
+#include "pid.h"
 
 RobotParameters g_params;
 
@@ -142,11 +143,11 @@ void startCalibration(uint32_t durationMs) {
     }
 
     Serial.printf("[CALIB] Sweep started. Duration=%u ms. 6 ADC1 sensors active "
-                  "(2 Left, 2 Center, 2 Right). ADC2 sensors (S0, S4, S8) excluded.\n", (unsigned)durationMs);
+                  "(2 Left: S1,S2 | 3 Center: S3,S4,S5 | 1 Right: S6). ADC2 sensors (S0, S7, S8) excluded.\n", (unsigned)durationMs);
 }
 
 // raw[NUM_SENSORS]: caller provides readings for every sensor each tick.
-// adc2Available=false  => skip ADC2 sensors (S0, S4, S8) while WiFi active.
+// adc2Available=false  => skip ADC2 sensors (S0, S7, S8) while WiFi active.
 // adc2Available=true   => include all 9 (running mode or WiFi disabled).
 void updateCalibration(const uint16_t raw[NUM_SENSORS], bool adc2Available) {
     if (!s_calibrating) return;
@@ -199,32 +200,38 @@ void getCalibrationSweepValues(uint16_t minOut[NUM_SENSORS],
 //    - S8 (Right, Far Right)  mirrors S6 (Right, Inner Right)
 // ---------------------------------------------------------------------------
 void applyCalibrationSweep(RobotParameters& params) {
+    // 1. Apply all successfully swept sensors first
     for (int i = 0; i < NUM_SENSORS; i++) {
         if (s_sweepMax[i] > s_sweepMin[i]) {
-            // Sensor was swept successfully
             params.sensors[i].minVal = s_sweepMin[i];
             params.sensors[i].maxVal = s_sweepMax[i];
             params.sensors[i].thresh = (s_sweepMin[i] + s_sweepMax[i]) / 2;
             Serial.printf("[CALIB] S%d (calibrated): min=%u max=%u thresh=%u\n",
                           i, s_sweepMin[i], s_sweepMax[i],
                           params.sensors[i].thresh);
-        } else {
-            // ADC2 sensor — mirror from its group neighbor(s)
-            if (i == 0) {
-                params.sensors[0] = params.sensors[1];
-                Serial.println("[CALIB] S0 (Left ADC2): mirrored from S1");
-            } else if (i == 7) {
-                params.sensors[7] = params.sensors[6];
-                Serial.println("[CALIB] S7 (Right ADC2): mirrored from S6");
-            } else if (i == 8) {
-                params.sensors[8] = params.sensors[6];
-                Serial.println("[CALIB] S8 (Right ADC2): mirrored from S6");
-            }
         }
+    }
+
+    // 2. Now mirror unswept ADC2 sensors from their calibrated group neighbors
+    if (s_sweepMax[0] <= s_sweepMin[0]) {
+        params.sensors[0] = params.sensors[1];
+        Serial.printf("[CALIB] S0 (Left ADC2): mirrored from S1 (min=%u max=%u thresh=%u)\n",
+                      params.sensors[0].minVal, params.sensors[0].maxVal, params.sensors[0].thresh);
+    }
+    if (s_sweepMax[7] <= s_sweepMin[7]) {
+        params.sensors[7] = params.sensors[6];
+        Serial.printf("[CALIB] S7 (Right ADC2): mirrored from S6 (min=%u max=%u thresh=%u)\n",
+                      params.sensors[7].minVal, params.sensors[7].maxVal, params.sensors[7].thresh);
+    }
+    if (s_sweepMax[8] <= s_sweepMin[8]) {
+        params.sensors[8] = params.sensors[6];
+        Serial.printf("[CALIB] S8 (Right ADC2): mirrored from S6 (min=%u max=%u thresh=%u)\n",
+                      params.sensors[8].minVal, params.sensors[8].maxVal, params.sensors[8].thresh);
     }
 
     params.isCalibrated = 1;
     saveParameters(params);
+    g_pid.updateParams(params);
 }
 
 void cancelCalibration() {

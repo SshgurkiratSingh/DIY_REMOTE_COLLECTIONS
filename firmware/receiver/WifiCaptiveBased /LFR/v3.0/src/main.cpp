@@ -85,19 +85,20 @@ void setup() {
     digitalWrite(STATUS_LED_PIN, LOW);
     pinMode(BOOT_BUTTON_PIN, INPUT_PULLUP);
 
+    // Initialize Preferences & Load stored parameters first
+    initPreferences();
+    loadParameters(g_params);
+    s_hasValidCalibration = isCalibrationValid(g_params);
+
     // Configure all 5 IR sensor pins (all on ADC1)
     for (int i = 0; i < NUM_SENSORS; i++) {
-        pinMode(SENSOR_PINS[i], INPUT);
+        uint8_t pin = (g_params.sensorPins[i] != 0) ? g_params.sensorPins[i] : SENSOR_PINS[i];
+        pinMode(pin, INPUT);
     }
 
     // Initialize Motor subsystem
     initMotors();
     emergencyStop();
-
-    // Initialize Preferences & Load stored parameters
-    initPreferences();
-    loadParameters(g_params);
-    s_hasValidCalibration = isCalibrationValid(g_params);
 
     // Update persistent boot counter
     uint32_t bootCount = incrementBootCount();
@@ -149,9 +150,14 @@ void loop() {
         if (isCalibrating()) {
             uint16_t raw[NUM_SENSORS];
             for (int i = 0; i < NUM_SENSORS; i++) {
-                raw[i] = readSensorRaw(SENSOR_PINS[i]);
+                uint8_t pin = (g_params.sensorPins[i] != 0) ? g_params.sensorPins[i] : SENSOR_PINS[i];
+                raw[i] = readSensorRaw(pin);
             }
             updateCalibration(raw);
+        }
+
+        if (isDetectingSensors()) {
+            updateSensorDetection();
         }
 
         // Keep motor safety verified (stops tests after timeout)
@@ -248,10 +254,11 @@ void loop() {
                 return;
             }
 
-            // Read all 5 IR sensors
+            // Read all 5 IR sensors using configured pin assignments
             uint16_t raw[NUM_SENSORS];
             for (int i = 0; i < NUM_SENSORS; i++) {
-                raw[i] = readSensorRaw(SENSOR_PINS[i]);
+                uint8_t pin = (g_params.sensorPins[i] != 0) ? g_params.sensorPins[i] : SENSOR_PINS[i];
+                raw[i] = readSensorRaw(pin);
             }
 
             // Feed motor safety watchdog

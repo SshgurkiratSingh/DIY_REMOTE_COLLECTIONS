@@ -39,16 +39,16 @@ struct SensorReadings {
     char       solvedPath[MAX_PATH_STEPS]; // Simplified shortest path discovered
 
     // 3-region convenience aliases (used by turn/junction detection)
-    // Left: S1 (-3000) | Center: S4 (0, dead center on ADC1) | Right: S7 (+3000) or S6 (+2000 in WiFi)
-    uint16_t rawL()  const { return raw[1];  }
-    uint16_t rawC()  const { return raw[4];  }
-    uint16_t rawR()  const { return (raw[7] > 0) ? raw[7] : raw[6];  }
-    uint16_t normL() const { return norm[1]; }
-    uint16_t normC() const { return norm[4]; }
-    uint16_t normR() const { return (norm[7] > 0) ? norm[7] : norm[6]; }
-    bool onLineL()   const { return onLine[1]; }
-    bool onLineC()   const { return onLine[4]; }
-    bool onLineR()   const { return onLine[7] || onLine[6]; }
+    // Left: S0, S1, S2 | Center: S3, S4, S5 | Right: S6, S7, S8
+    uint16_t rawL()  const { uint16_t m = (raw[0] > raw[1]) ? raw[0] : raw[1]; return (raw[2] > m) ? raw[2] : m; }
+    uint16_t rawC()  const { uint16_t m = (raw[3] > raw[4]) ? raw[3] : raw[4]; return (raw[5] > m) ? raw[5] : m; }
+    uint16_t rawR()  const { uint16_t m = (raw[6] > raw[7]) ? raw[6] : raw[7]; return (raw[8] > m) ? raw[8] : m; }
+    uint16_t normL() const { uint16_t m = (norm[0] > norm[1]) ? norm[0] : norm[1]; return (norm[2] > m) ? norm[2] : m; }
+    uint16_t normC() const { uint16_t m = (norm[3] > norm[4]) ? norm[3] : norm[4]; return (norm[5] > m) ? norm[5] : m; }
+    uint16_t normR() const { uint16_t m = (norm[6] > norm[7]) ? norm[6] : norm[7]; return (norm[8] > m) ? norm[8] : m; }
+    bool onLineL()   const { return onLine[0] || onLine[1] || onLine[2]; }
+    bool onLineC()   const { return onLine[3] || onLine[4] || onLine[5]; }
+    bool onLineR()   const { return onLine[6] || onLine[7] || onLine[8]; }
 };
 
 class PIDController {

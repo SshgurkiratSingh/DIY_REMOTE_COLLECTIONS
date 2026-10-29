@@ -162,6 +162,14 @@ a{color:#6bf}
           <span class="pos-val" id="posVal">0</span>
         </div>
       </div>
+
+      <div id="steeringBox" style="margin-top:6px;font-size:12px;text-align:center;padding:5px;background:#181818;border-radius:3px;border:1px solid #282828">
+        Steering Diagnostic: <strong id="diagTxt" style="color:#3f9">CENTERED</strong>
+      </div>
+      <div class="hint" style="text-align:center;margin-top:3px;margin-bottom:8px">
+        Verification: Line on <strong>ROBOT LEFT</strong> &rarr; Position must be <strong>NEGATIVE (&minus;)</strong> &amp; Steering LEFT.<br>
+        Line on <strong>ROBOT RIGHT</strong> &rarr; Position must be <strong>POSITIVE (+)</strong> &amp; Steering RIGHT.
+      </div>
     </div>
 
     <div class="sec">
@@ -171,6 +179,24 @@ a{color:#6bf}
       <div id="calibBox">
         <span>Sweeping... <span class="mono" id="countdown">10</span>s left</span>
         <div class="prog"><div class="prog-fill" id="calibBar"></div></div>
+      </div>
+
+      <div style="margin-top:10px;background:#181818;padding:8px;border-radius:4px;border:1px solid #282828">
+        <div class="sec-title" style="margin-bottom:6px">Sensor Pin Mapping (Center = S2)</div>
+        <div class="field">
+          <label>Pin Sequence Preset</label>
+          <select id="sel_pinPreset" onchange="applyPinPreset()">
+            <option value="39,34,35,32,33">Robot Left-to-Right Array (39, 34, 35, 32, 33) [Center = 35 - Recommended]</option>
+            <option value="33,32,35,34,39">Reversed Array (33, 32, 35, 34, 39) [Center = 35]</option>
+            <option value="32,33,35,34,39">Sequential Pinout (32, 33, 35, 34, 39) [Center = 35]</option>
+            <option value="32,33,34,35,39">Legacy Pinout (32, 33, 34, 35, 39) [Center = 34]</option>
+          </select>
+        </div>
+        <button class="btn" style="margin-top:5px;background:#243346;border-color:#3d5a80;color:#8ecae6" onclick="reverseSensorOrder()">&harr; Invert Sensor Array Order (Reverse Left &amp; Right)</button>
+        <button class="btn btn-act" style="margin-top:6px" id="btnDetectOrder" onclick="startDetectOrder()">Auto-Detect Sensor Order (Slide L &rarr; R)</button>
+        <div id="detectBox" style="display:none;margin-top:6px;font-size:12px;color:#6bf;padding:6px;background:#102030;border-radius:3px">
+          <span>Detecting... Slowly slide robot from LEFT to RIGHT over the black line.</span>
+        </div>
       </div>
 
       <div style="margin-top:10px">
@@ -210,12 +236,12 @@ a{color:#6bf}
       <div class="field">
         <label>Routing Strategy</label>
         <select id="sel_nav" onchange="toggleRouteBox()">
-          <option value="0">Autonomous Left-Hand Rule (LSRB) [Default for unknown maps]</option>
-          <option value="1">Autonomous Right-Hand Rule (RSLB)</option>
+          <option value="3" selected>Standard PID Line Follower (Smooth Continuous Tracking) [Recommended]</option>
+          <option value="0">Autonomous Left-Hand Rule (LSRB) [Unknown Mazes Only]</option>
+          <option value="1">Autonomous Right-Hand Rule (RSLB) [Unknown Mazes Only]</option>
           <option value="2">Custom / Pre-Programmed Route Sequence</option>
-          <option value="3">Standard PID Line Follower</option>
         </select>
-        <div class="hint" style="margin-top:4px">LSRB/RSLB: Solves any unknown or changed maze autonomously without hardcoded turns.<br>Custom: Executes specified turn letters (L, R, S).</div>
+        <div class="hint" style="margin-top:4px">Standard PID: Smooth proportional line tracking. Autonomous LSRB/RSLB: Executes 90-deg pivot turns at maze junctions.</div>
       </div>
       <div class="field" id="box_customRoute">
         <label>Custom Route Sequence (L = Left, R = Right, S = Straight)</label>
@@ -229,17 +255,17 @@ a{color:#6bf}
       <div class="field">
         <label>Kp (Proportional)</label>
         <div class="hint">Steering strength proportional to position error (-2000 to +2000).</div>
-        <div class="row"><input type="range" id="rng_kp" min="0" max="100" step="0.5" value="20" oninput="sv('kp')"><input type="number" id="num_kp" min="0" max="100" step="0.5" value="20" onchange="sv('kp')"></div>
+        <div class="row"><input type="range" id="rng_kp" min="0" max="100" step="0.5" value="16" oninput="sv('kp')"><input type="number" id="num_kp" min="0" max="100" step="0.5" value="16" onchange="sv('kp')"></div>
       </div>
       <div class="field">
         <label>Ki (Integral)</label>
         <div class="hint">Corrects persistent offset on gradual curves.</div>
-        <div class="row"><input type="range" id="rng_ki" min="0" max="2" step="0.01" value="0.08" oninput="sv('ki')"><input type="number" id="num_ki" min="0" max="2" step="0.01" value="0.08" onchange="sv('ki')"></div>
+        <div class="row"><input type="range" id="rng_ki" min="0" max="2" step="0.01" value="0.04" oninput="sv('ki')"><input type="number" id="num_ki" min="0" max="2" step="0.01" value="0.04" onchange="sv('ki')"></div>
       </div>
       <div class="field">
         <label>Kd (Derivative)</label>
         <div class="hint">Dampens oscillation and prevents overshooting on center return.</div>
-        <div class="row"><input type="range" id="rng_kd" min="0" max="80" step="0.5" value="14" oninput="sv('kd')"><input type="number" id="num_kd" min="0" max="80" step="0.5" value="14" onchange="sv('kd')"></div>
+        <div class="row"><input type="range" id="rng_kd" min="0" max="80" step="0.5" value="12" oninput="sv('kd')"><input type="number" id="num_kd" min="0" max="80" step="0.5" value="12" onchange="sv('kd')"></div>
       </div>
     </div>
 
@@ -247,15 +273,15 @@ a{color:#6bf}
       <div class="sec-title">Speed (PWM 0-255)</div>
       <div class="field">
         <label>Base Speed</label>
-        <div class="row"><input type="range" id="rng_base" min="0" max="255" value="150" oninput="sv('base')"><input type="number" id="num_base" min="0" max="255" value="150" onchange="sv('base')"></div>
+        <div class="row"><input type="range" id="rng_base" min="0" max="255" value="110" oninput="sv('base')"><input type="number" id="num_base" min="0" max="255" value="110" onchange="sv('base')"></div>
       </div>
       <div class="field">
         <label>Min Speed</label>
-        <div class="row"><input type="range" id="rng_min" min="0" max="255" value="0" oninput="sv('min')"><input type="number" id="num_min" min="0" max="255" value="0" onchange="sv('min')"></div>
+        <div class="row"><input type="range" id="rng_min" min="-100" max="255" value="0" oninput="sv('min')"><input type="number" id="num_min" min="-100" max="255" value="0" onchange="sv('min')"></div>
       </div>
       <div class="field">
         <label>Max Speed</label>
-        <div class="row"><input type="range" id="rng_max" min="0" max="255" value="255" oninput="sv('max')"><input type="number" id="num_max" min="0" max="255" value="255" onchange="sv('max')"></div>
+        <div class="row"><input type="range" id="rng_max" min="0" max="255" value="220" oninput="sv('max')"><input type="number" id="num_max" min="0" max="255" value="220" onchange="sv('max')"></div>
       </div>
     </div>
 
@@ -275,8 +301,16 @@ a{color:#6bf}
   <!-- MOTORS -->
   <div id="p-motors" class="pane">
     <div class="sec">
-      <div class="sec-title">Motor Test</div>
-      <p style="font-size:12px;color:#777;margin-bottom:8px">Verify TB6612FNG wiring (Left: PWMA D13, AIN1 D27, AIN2 D14 | Right: PWMB D12, BIN1 D25, BIN2 D16 | STBY D26). Each button runs one motor at the selected speed.</p>
+      <div class="sec-title">Motor Test &amp; Direction Setup</div>
+      <p style="font-size:12px;color:#777;margin-bottom:8px">TB6612FNG (Left: PWMA D13, AIN1 D27, AIN2 D14 | Right: PWMB D12, BIN1 D25, BIN2 D16 | STBY D26). Verify wheel direction and use the checkboxes below if any motor rotates in reverse.</p>
+      
+      <div style="margin-bottom:12px;background:#181818;padding:8px;border-radius:4px;border:1px solid #282828">
+        <div style="font-weight:600;font-size:12px;margin-bottom:6px;color:#ccc">Motor Polarity &amp; Channel Setup</div>
+        <label style="display:flex;align-items:center;gap:6px;margin-bottom:5px;cursor:pointer"><input type="checkbox" id="chk_invL" onchange="submitMotorConfig()"> Invert Left Motor Direction</label>
+        <label style="display:flex;align-items:center;gap:6px;margin-bottom:5px;cursor:pointer"><input type="checkbox" id="chk_invR" onchange="submitMotorConfig()"> Invert Right Motor Direction</label>
+        <label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="chk_swap" onchange="submitMotorConfig()"> Swap Left &amp; Right Motor Channels</label>
+      </div>
+
       <div class="field">
         <label>Test Speed: <span class="mono" id="tsLabel">120</span></label>
         <input type="range" id="testSpeed" min="40" max="255" value="120" oninput="document.getElementById('tsLabel').innerText=this.value">
@@ -307,11 +341,9 @@ a{color:#6bf}
 </div>
 
 <script>
-const SENSOR_NAMES = [
-  "S0 (32) Far Left", "S1 (33) Near Left", "S2 (34) Center",
-  "S3 (35) Near Right", "S4 (39/VN) Far Right"
-];
-let pollId=null,calibId=null;
+const SENSOR_ROLES = ["Far Left", "Near Left", "Center", "Near Right", "Far Right"];
+let sPins = [39, 34, 35, 32, 33];
+let pollId=null,calibId=null,detectId=null;
 
 function $(id){return document.getElementById(id)}
 function status(msg,type){const b=$('statusBar');b.innerText=msg;b.className=type;setTimeout(()=>b.style.display='none',3000)}
@@ -319,8 +351,9 @@ function status(msg,type){const b=$('statusBar');b.innerText=msg;b.className=typ
 function buildTables(){
   let sHtml='', thHtml='', stHtml='';
   for(let i=0; i<5; i++){
+    const lbl = `S${i} (${sPins[i]}) ${SENSOR_ROLES[i]}`;
     sHtml += `<tr>
-      <td class="lbl">${SENSOR_NAMES[i]}</td>
+      <td class="lbl">${lbl}</td>
       <td class="mono" id="raw${i}">-</td>
       <td class="mono" id="norm${i}">-</td>
       <td><div class="hbar"><div class="hbar-fill" id="bar${i}"></div></div></td>
@@ -328,13 +361,13 @@ function buildTables(){
     </tr>`;
 
     thHtml += `<div class="thresh-row">
-      <span class="lbl">${SENSOR_NAMES[i]}</span>
+      <span class="lbl">${lbl}</span>
       <input type="range" min="0" max="4095" id="sl_th${i}" oninput="thl(${i})">
       <span class="val" id="vl_th${i}">-</span>
     </div>`;
 
     stHtml += `<tr>
-      <td class="lbl">${SENSOR_NAMES[i]}</td>
+      <td class="lbl">${lbl}</td>
       <td class="mono" id="sMin${i}">-</td>
       <td class="mono" id="sMax${i}">-</td>
       <td class="mono" id="sTh${i}">-</td>
@@ -390,6 +423,20 @@ async function fetchS(){
     const pct = Math.min(Math.max(((d.position + 2000) / 4000) * 100, 0), 100);
     $('posDot').style.left = pct + '%';
     $('robotState').innerText = d.status || '-';
+
+    const diagEl = $('diagTxt');
+    if(diagEl){
+      if(d.position < -250){
+        diagEl.innerText = 'STEERING LEFT (Line on Robot Left)';
+        diagEl.style.color = '#38bdf8';
+      }else if(d.position > 250){
+        diagEl.innerText = 'STEERING RIGHT (Line on Robot Right)';
+        diagEl.style.color = '#fbbf24';
+      }else{
+        diagEl.innerText = 'CENTERED (On Track)';
+        diagEl.style.color = '#4ade80';
+      }
+    }
     
     if(d.checkpoints!==undefined) $('cpCount').innerText=d.checkpoints;
     if(d.solvedPath) $('solvedRoute').innerText=d.solvedPath;
@@ -439,11 +486,93 @@ async function checkCalib(){
   }catch(e){}
 }
 
+async function startDetectOrder(){
+  try{
+    const r=await fetch('/api/sensors/detect-order',{method:'POST'});
+    const d=await r.json();
+    if(d.success){
+      $('detectBox').style.display='block';$('btnDetectOrder').disabled=true;
+      if(detectId)clearInterval(detectId);
+      detectId=setInterval(checkDetectOrder,300);
+    }
+  }catch(e){status('Detection failed','err')}
+}
+
+async function checkDetectOrder(){
+  try{
+    const r=await fetch('/api/sensors/detect-order/status');
+    const d=await r.json();
+    if(!d.active){
+      clearInterval(detectId);detectId=null;
+      $('detectBox').style.display='none';$('btnDetectOrder').disabled=false;
+      if(d.pins && d.pins[0] > 0){
+        sPins = d.pins;
+        buildTables();
+        status('Sensor order auto-detected: '+sPins.join(', '),'ok');
+        loadParams();
+      }else{
+        status('Sensor auto-detection timed out','warn');
+      }
+    }
+  }catch(e){}
+}
+
+async function applyPinPreset(){
+  const val = $('sel_pinPreset').value;
+  const parts = val.split(',').map(x=>parseInt(x.trim()));
+  if(parts.length===5){
+    sPins = parts;
+    const b = new URLSearchParams();
+    for(let i=0; i<5; i++) b.append('pin'+i, parts[i]);
+    const r=await fetch('/api/params',{method:'POST',body:b});
+    if(r.ok){
+      buildTables();
+      status('Sensor pin mapping updated','ok');
+      loadParams();
+    }
+  }
+}
+
+async function reverseSensorOrder(){
+  sPins.reverse();
+  const b = new URLSearchParams();
+  for(let i=0; i<5; i++) b.append('pin'+i, sPins[i]);
+  const r=await fetch('/api/params',{method:'POST',body:b});
+  if(r.ok){
+    buildTables();
+    status('Sensor order reversed: '+sPins.join(', '),'ok');
+    loadParams();
+  }
+}
+
+async function submitMotorConfig(){
+  const b=new URLSearchParams({
+    invertLeftMotor: $('chk_invL').checked ? 1 : 0,
+    invertRightMotor: $('chk_invR').checked ? 1 : 0,
+    swapMotors: $('chk_swap').checked ? 1 : 0
+  });
+  const r=await fetch('/api/params',{method:'POST',body:b});
+  if(r.ok){status('Motor polarity saved','ok');loadParams()}
+}
+
 async function loadParams(){
   try{
     const r=await fetch('/api/params');if(!r.ok)return;
     const d=await r.json();
     $('bootCount').innerText=d.bootCount;
+
+    if(d.sensorPins && d.sensorPins.length===5 && d.sensorPins[0] > 0){
+      sPins = d.sensorPins;
+      buildTables();
+      const pStr = sPins.join(',');
+      for(let opt of $('sel_pinPreset').options){
+        if(opt.value===pStr){$('sel_pinPreset').value=pStr;break}
+      }
+    }
+
+    if(d.invertLeftMotor !== undefined) $('chk_invL').checked = (d.invertLeftMotor==1);
+    if(d.invertRightMotor !== undefined) $('chk_invR').checked = (d.invertRightMotor==1);
+    if(d.swapMotors !== undefined) $('chk_swap').checked = (d.swapMotors==1);
 
     for(let i=0; i<5; i++){
       if(d.minVal && d.minVal[i] !== undefined) $('sMin'+i).innerText = d.minVal[i];
@@ -472,13 +601,13 @@ async function loadParams(){
     else if(d.navMode==3) navDesc = 'Standard PID Line Follower';
 
     $('rvTable').innerHTML=
-      '<tr><td>Sensors</td><td>5-IR ADC1 Array Active</td></tr>'+
+      '<tr><td>Sensor Pins</td><td>['+sPins.join(', ')+'] (Center: GPIO '+sPins[2]+')</td></tr>'+
       '<tr><td>Calibration</td><td>'+(d.isCalibrated?'Yes':'No')+'</td></tr>'+
       '<tr><td>Strategy</td><td>'+navDesc+'</td></tr>'+
-      '<tr><td>Custom Route</td><td>'+(d.customPath||'-')+'</td></tr>'+
-      '<tr><td>PID Gains</td><td>'+d.kp+' / '+d.ki+' / '+d.kd+'</td></tr>'+
+      '<tr><td>PID Gains</td><td>Kp: '+d.kp+' / Ki: '+d.ki+' / Kd: '+d.kd+'</td></tr>'+
       '<tr><td>Speeds</td><td>Base: '+d.baseSpeed+' (Min: '+d.minSpeed+', Max: '+d.maxSpeed+')</td></tr>'+
-      '<tr><td>Polarity</td><td>'+(d.invertLine==0?'Black on white':'White on black')+'</td></tr>'+
+      '<tr><td>Motor Inversion</td><td>InvL: '+(d.invertLeftMotor?'Yes':'No')+', InvR: '+(d.invertRightMotor?'Yes':'No')+', Swap: '+(d.swapMotors?'Yes':'No')+'</td></tr>'+
+      '<tr><td>Line Polarity</td><td>'+(d.invertLine==0?'Black on white':'White on black')+'</td></tr>'+
       '<tr><td>Boot #</td><td>'+d.bootCount+'</td></tr>';
   }catch(e){}
 }
@@ -515,13 +644,17 @@ async function saveAll(){
     baseSpeed:$('rng_base').value,minSpeed:$('rng_min').value,maxSpeed:$('rng_max').value,
     invertLine:$('sel_pol').value,
     navMode:$('sel_nav').value,
-    customPath:$('txt_route').value
+    customPath:$('txt_route').value,
+    invertLeftMotor: $('chk_invL').checked ? 1 : 0,
+    invertRightMotor: $('chk_invR').checked ? 1 : 0,
+    swapMotors: $('chk_swap').checked ? 1 : 0
   });
   for(let i=0; i<5; i++){
     b.append('thresh'+i, $('sl_th'+i).value);
+    b.append('pin'+i, sPins[i]);
   }
   const r=await fetch('/api/params',{method:'POST',body:b});
-  if(r.ok){status('All 5-IR parameters saved to NVS','ok');loadParams()}
+  if(r.ok){status('All parameters saved to NVS','ok');loadParams()}
 }
 
 async function saveAndRun(){
@@ -532,10 +665,14 @@ async function saveAndRun(){
     baseSpeed:$('rng_base').value,minSpeed:$('rng_min').value,maxSpeed:$('rng_max').value,
     invertLine:$('sel_pol').value,
     navMode:$('sel_nav').value,
-    customPath:$('txt_route').value
+    customPath:$('txt_route').value,
+    invertLeftMotor: $('chk_invL').checked ? 1 : 0,
+    invertRightMotor: $('chk_invR').checked ? 1 : 0,
+    swapMotors: $('chk_swap').checked ? 1 : 0
   });
   for(let i=0; i<5; i++){
     b.append('thresh'+i, $('sl_th'+i).value);
+    b.append('pin'+i, sPins[i]);
   }
   try{
     await fetch('/api/params',{method:'POST',body:b});
@@ -603,7 +740,8 @@ void initWebPortal() {
     s_server.on("/api/sensors", HTTP_GET, [](AsyncWebServerRequest *request) {
         uint16_t raw[NUM_SENSORS];
         for (int i = 0; i < NUM_SENSORS; i++) {
-            raw[i] = readSensorRaw(SENSOR_PINS[i]);
+            uint8_t pin = (g_params.sensorPins[i] != 0) ? g_params.sensorPins[i] : SENSOR_PINS[i];
+            raw[i] = readSensorRaw(pin);
         }
 
         // Update calibration sweep if active
@@ -643,21 +781,25 @@ void initWebPortal() {
     // API: GET /api/params - Stored configuration
     // ------------------------------------------------------------------------
     s_server.on("/api/params", HTTP_GET, [](AsyncWebServerRequest *request) {
-        char json[650];
+        char json[750];
         snprintf(json, sizeof(json),
                  "{\"isCalibrated\":%u,"
+                 "\"sensorPins\":[%u,%u,%u,%u,%u],"
                  "\"minVal\":[%u,%u,%u,%u,%u],"
                  "\"maxVal\":[%u,%u,%u,%u,%u],"
                  "\"thresh\":[%u,%u,%u,%u,%u],"
                  "\"kp\":%.2f,\"ki\":%.3f,\"kd\":%.2f,"
                  "\"baseSpeed\":%d,\"minSpeed\":%d,\"maxSpeed\":%d,"
+                 "\"invertLeftMotor\":%u,\"invertRightMotor\":%u,\"swapMotors\":%u,"
                  "\"invertLine\":%u,\"navMode\":%u,\"customPath\":\"%s\",\"bootCount\":%u}",
                  g_params.isCalibrated,
+                 g_params.sensorPins[0], g_params.sensorPins[1], g_params.sensorPins[2], g_params.sensorPins[3], g_params.sensorPins[4],
                  g_params.minVal[0], g_params.minVal[1], g_params.minVal[2], g_params.minVal[3], g_params.minVal[4],
                  g_params.maxVal[0], g_params.maxVal[1], g_params.maxVal[2], g_params.maxVal[3], g_params.maxVal[4],
                  g_params.thresh[0], g_params.thresh[1], g_params.thresh[2], g_params.thresh[3], g_params.thresh[4],
                  g_params.kp, g_params.ki, g_params.kd,
                  g_params.baseSpeed, g_params.minSpeed, g_params.maxSpeed,
+                 g_params.invertLeftMotor, g_params.invertRightMotor, g_params.swapMotors,
                  g_params.invertLine, g_params.navMode, g_params.customPath, getBootCount());
 
         request->send(200, "application/json", json);
@@ -695,6 +837,29 @@ void initWebPortal() {
     });
 
     // ------------------------------------------------------------------------
+    // API: POST /api/sensors/detect-order - Start sensor order auto-detection
+    // ------------------------------------------------------------------------
+    s_server.on("/api/sensors/detect-order", HTTP_POST, [](AsyncWebServerRequest *request) {
+        startSensorDetection();
+        request->send(200, "application/json", "{\"success\":true}");
+    });
+
+    // ------------------------------------------------------------------------
+    // API: GET /api/sensors/detect-order/status - Sensor order auto-detection status
+    // ------------------------------------------------------------------------
+    s_server.on("/api/sensors/detect-order/status", HTTP_GET, [](AsyncWebServerRequest *request) {
+        bool active = isDetectingSensors();
+        uint8_t pins[NUM_SENSORS];
+        getDetectedPins(pins);
+        char json[150];
+        snprintf(json, sizeof(json),
+                 "{\"active\":%s,\"pins\":[%u,%u,%u,%u,%u]}",
+                 active ? "true" : "false",
+                 pins[0], pins[1], pins[2], pins[3], pins[4]);
+        request->send(200, "application/json", json);
+    });
+
+    // ------------------------------------------------------------------------
     // API: POST /api/params - Save parameters
     // ------------------------------------------------------------------------
     s_server.on("/api/params", HTTP_POST, [](AsyncWebServerRequest *request) {
@@ -708,6 +873,17 @@ void initWebPortal() {
 
         if (request->hasParam("invertLine", true)) g_params.invertLine = request->getParam("invertLine", true)->value().toInt();
         if (request->hasParam("navMode", true)) g_params.navMode = request->getParam("navMode", true)->value().toInt();
+
+        if (request->hasParam("invertLeftMotor", true)) g_params.invertLeftMotor = request->getParam("invertLeftMotor", true)->value().toInt();
+        if (request->hasParam("invertRightMotor", true)) g_params.invertRightMotor = request->getParam("invertRightMotor", true)->value().toInt();
+        if (request->hasParam("swapMotors", true)) g_params.swapMotors = request->getParam("swapMotors", true)->value().toInt();
+
+        for (int i = 0; i < NUM_SENSORS; i++) {
+            String pName = "pin" + String(i);
+            if (request->hasParam(pName, true)) {
+                g_params.sensorPins[i] = request->getParam(pName, true)->value().toInt();
+            }
+        }
 
         if (request->hasParam("customPath", true)) {
             String r = request->getParam("customPath", true)->value();

@@ -3,13 +3,16 @@
 #include <Arduino.h>
 #include "config.h"
 
-// Magic number to verify valid parameter block in NVS ("LFR5")
-#define PARAMS_MAGIC 0x4C465235 // "LFR5"
+// Magic number to verify valid parameter block in NVS ("LFR9")
+#define PARAMS_MAGIC 0x4C465239 // "LFR9"
 
 struct RobotParameters {
     uint32_t magic;
     uint8_t isCalibrated;
     
+    // Dynamic sensor GPIO pins [S0 Far Left ... S4 Far Right]
+    uint8_t sensorPins[NUM_SENSORS];
+
     // 5 IR Sensor Min / Max / Threshold
     uint16_t minVal[NUM_SENSORS];
     uint16_t maxVal[NUM_SENSORS];
@@ -24,6 +27,11 @@ struct RobotParameters {
     int16_t baseSpeed;
     int16_t minSpeed;
     int16_t maxSpeed;
+
+    // Motor polarity & direction configuration
+    uint8_t invertLeftMotor;   // 1 = invert left motor direction
+    uint8_t invertRightMotor;  // 1 = invert right motor direction
+    uint8_t swapMotors;        // 1 = swap left and right motor channels
 
     // 0 = Black line on white surface, 1 = White line on black surface
     uint8_t invertLine;
@@ -64,3 +72,9 @@ uint8_t getCalibrationProgressPct();
 void getCalibrationSweepValues(uint16_t minVals[NUM_SENSORS], uint16_t maxVals[NUM_SENSORS]);
 void applyCalibrationSweep(RobotParameters& params);
 void cancelCalibration();
+
+// Sensor Order Auto-Detection (Slide robot across line L -> R)
+void startSensorDetection();
+bool updateSensorDetection();
+bool isDetectingSensors();
+void getDetectedPins(uint8_t pins[NUM_SENSORS]);

@@ -24,4 +24,6 @@ void testMotor(const String& action, int16_t speed);
 void notifyMotorSafetyFeed();
 
 // Checks if safety timeout has elapsed; stops motors if timed out
-bool checkMotorSafety();
+// When isRunningMode is true, enforces 500ms sensor feed watchdog.
+// When isRunningMode is false (calibration mode), only enforces 10s bench test timeout.
+bool checkMotorSafety(bool isRunningMode = true);

@@ -76,6 +76,7 @@ void setup() {
     // Initialize Preferences & Load stored parameters
     initPreferences();
     loadParameters(g_params);
+    g_pid.init(g_params);
     s_hasValidCalibration = isCalibrationValid(g_params);
 
     // Update persistent boot counter
@@ -142,8 +143,8 @@ void loop() {
             updateCalibration(rawAll, false); // adc2Available=false
         }
 
-        // Keep motor safety verified (stops tests after timeout)
-        checkMotorSafety();
+        // Keep motor safety verified (stops tests after timeout; no 500ms sensor check in calibration)
+        checkMotorSafety(false);
 
         delay(2);
     } else {
@@ -242,57 +243,47 @@ void loop() {
             // Feed motor safety watchdog
             notifyMotorSafetyFeed();
 
-            if (s_hasValidCalibration) {
-                int16_t leftSpeed  = 0;
-                int16_t rightSpeed = 0;
+            int16_t leftSpeed  = 0;
+            int16_t rightSpeed = 0;
 
-                // Compute PID response with all 9 sensors active (adc2Available = true)
-                g_pid.compute(rawAll, true, leftSpeed, rightSpeed);
+            // Compute PID response with all 9 sensors active (adc2Available = true)
+            g_pid.compute(rawAll, true, leftSpeed, rightSpeed);
 
-                // Check if Zone B (End Point) has been reached
-                if (g_pid.isFinished()) {
-                    emergencyStop();
-                    s_runState    = RUN_STATE_FINISHED;
-                    s_runDuration = millis() - s_runStartTime;
-
-                    SensorReadings sr = g_pid.getReadings();
-                    Serial.println("\n==============================================");
-                    Serial.println("   OFFICIAL RUN COMPLETED!");
-                    Serial.printf( "   Time Elapsed: %.2f seconds\n", s_runDuration / 1000.0f);
-                    Serial.printf( "   Checkpoints Reached: %u / 4\n", sr.checkpoints);
-                    Serial.println("==============================================\n");
-                    return;
-                }
-
-                // Drive TB6612FNG motors
-                setMotorSpeed(leftSpeed, rightSpeed);
-
-                // Periodic telemetry (every 500ms) — print all 9 sensor norms
-                static uint32_t s_lastLog = 0;
-                if (now - s_lastLog >= 500) {
-                    s_lastLog = now;
-                    SensorReadings sr = g_pid.getReadings();
-                    Serial.printf("[LFR] Norm:[%3u,%3u,%3u,%3u,%3u,%3u,%3u,%3u,%3u] Pos:%5d L:%4d R:%4d %s CP:%u/4\n",
-                                  sr.norm[0], sr.norm[1], sr.norm[2],
-                                  sr.norm[3], sr.norm[4], sr.norm[5],
-                                  sr.norm[6], sr.norm[7], sr.norm[8],
-                                  sr.position, leftSpeed, rightSpeed,
-                                  PIDController::statusToString(sr.status),
-                                  sr.checkpoints);
-                }
-            } else {
-                // No valid calibration data: stop motors and wait for calibration
+            // Check if Zone B (End Point) has been reached
+            if (g_pid.isFinished()) {
                 emergencyStop();
-                static uint32_t s_lastWarn = 0;
-                if (now - s_lastWarn >= 2000) {
-                    s_lastWarn = now;
-                    Serial.println("[WARNING] No valid calibration found! Hold BOOT button or wait for 5th boot to calibrate.");
-                }
+                s_runState    = RUN_STATE_FINISHED;
+                s_runDuration = millis() - s_runStartTime;
+
+                SensorReadings sr = g_pid.getReadings();
+                Serial.println("\n==============================================");
+                Serial.println("   OFFICIAL RUN COMPLETED!");
+                Serial.printf( "   Time Elapsed: %.2f seconds\n", s_runDuration / 1000.0f);
+                Serial.printf( "   Checkpoints Reached: %u / 4\n", sr.checkpoints);
+                Serial.println("==============================================\n");
+                return;
+            }
+
+            // Drive TB6612FNG motors
+            setMotorSpeed(leftSpeed, rightSpeed);
+
+            // Periodic telemetry (every 500ms) — print all 9 sensor norms
+            static uint32_t s_lastLog = 0;
+            if (now - s_lastLog >= 500) {
+                s_lastLog = now;
+                SensorReadings sr = g_pid.getReadings();
+                Serial.printf("[LFR] Norm:[%3u,%3u,%3u,%3u,%3u,%3u,%3u,%3u,%3u] Pos:%5d L:%4d R:%4d %s CP:%u/4\n",
+                              sr.norm[0], sr.norm[1], sr.norm[2],
+                              sr.norm[3], sr.norm[4], sr.norm[5],
+                              sr.norm[6], sr.norm[7], sr.norm[8],
+                              sr.position, leftSpeed, rightSpeed,
+                              PIDController::statusToString(sr.status),
+                              sr.checkpoints);
             }
         }
 
         // Safety watchdog: halts motors if sensor loop stalls > 500ms
-        checkMotorSafety();
+        checkMotorSafety(true);
 
         delay(1);
     }

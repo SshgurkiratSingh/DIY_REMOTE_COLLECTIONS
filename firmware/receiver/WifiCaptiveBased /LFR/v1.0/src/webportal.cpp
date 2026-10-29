@@ -383,7 +383,7 @@ async function fetchS(){
       if(indEl) indEl.className=d.on_line[i]?'ind on':'ind off';
     }
     $('posVal').innerText=d.position;
-    $('posDot').style.left=Math.min(Math.max(((d.position+6000)/12000)*100,0),100)+'%';
+    $('posDot').style.left=Math.min(Math.max(((d.position+4000)/8000)*100,0),100)+'%';
     $('robotState').innerText=d.status||'-';
     
     if(d.checkpoints!==undefined) $('cpCount').innerText=d.checkpoints;
@@ -755,6 +755,7 @@ void initWebPortal() {
             }
         }
 
+        g_params.isCalibrated = 1;
         saveParameters(g_params);
         g_pid.updateParams(g_params);
 
@@ -797,7 +798,9 @@ void initWebPortal() {
     // API: POST /api/saveandrun - Save and reboot to running mode
     // ------------------------------------------------------------------------
     s_server.on("/api/saveandrun", HTTP_POST, [](AsyncWebServerRequest *request) {
+        g_params.isCalibrated = 1;
         saveParameters(g_params);
+        g_pid.updateParams(g_params);
         emergencyStop();
 
         // Ensure next boot counter does not land on calibration interval

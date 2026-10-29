@@ -12,8 +12,8 @@
 //  TB6612FNG Dual H-Bridge Motor Driver Pins
 // ----------------------------------------------------------------------------
 #define MOTOR_PWMA_PIN          13   // PWM speed control for Left Motor (Motor A)
-#define MOTOR_AIN1_PIN          27   // Direction control 1 for Left Motor (Ain 1)
-#define MOTOR_AIN2_PIN          14   // Direction control 2 for Left Motor (Ain 2)
+#define MOTOR_AIN1_PIN          27   // Direction control 1 for Left Motor (Ain 1 = 27)
+#define MOTOR_AIN2_PIN          14   // Direction control 2 for Left Motor (Ain 2 = 14)
 #define MOTOR_STBY_PIN          26   // Standby control (HIGH = enabled, LOW = standby)
 #define MOTOR_BIN1_PIN          25   // Direction control 1 for Right Motor (Bin 1)
 #define MOTOR_BIN2_PIN          16   // Direction control 2 for Right Motor (Bin 2)
@@ -31,22 +31,19 @@
 // ----------------------------------------------------------------------------
 //  5x IR Line Tracking Sensor Pins (Left S0 to Right S4)
 //  All on ADC1 (Safe with concurrent active WiFi)
+//  Physical Robot Left-to-Right order: [39, 34, 35, 32, 33]
+//  Center sensor is GPIO 35 (Index 2)
 // ----------------------------------------------------------------------------
 #define NUM_SENSORS             5
 
-// Sensors S0 to S4 ordered from Robot Left to Robot Right:
-// S0: Far Left       (GPIO 32 - ADC1_CH4)
-// S1: Near Left      (GPIO 33 - ADC1_CH5)
-// S2: Center         (GPIO 34 - ADC1_CH6)
-// S3: Near Right     (GPIO 35 - ADC1_CH7)
-// S4: Far Right      (GPIO 39 - ADC1_CH3 / VN)
-#define SENSOR_PIN_0            32
-#define SENSOR_PIN_1            33
-#define SENSOR_PIN_2            34
-#define SENSOR_PIN_3            35
-#define SENSOR_PIN_4            39   // VN pin on ESP32 DevKit
+// Default sensor physical mapping (Front View: S0=Far Left ... S4=Far Right):
+#define SENSOR_PIN_0            39   // S0: Far Left  (VN / GPIO 39)
+#define SENSOR_PIN_1            34   // S1: Near Left (GPIO 34)
+#define SENSOR_PIN_2            35   // S2: Center    (GPIO 35)
+#define SENSOR_PIN_3            32   // S3: Near Right(GPIO 32)
+#define SENSOR_PIN_4            33   // S4: Far Right (GPIO 33)
 
-#define SENSOR_CENTER_INDEX     2    // Index of the center sensor (S2 - GPIO 34)
+#define SENSOR_CENTER_INDEX     2    // Index of the center sensor (S2 - GPIO 35)
 #define SENSOR_CENTER_PIN       SENSOR_PIN_2
 
 static const uint8_t SENSOR_PINS[NUM_SENSORS] = {
@@ -85,12 +82,12 @@ static const uint8_t SENSOR_PINS[NUM_SENSORS] = {
 // ============================================================================
 //  Navigation Modes (Dynamic & Unknown Map Ready)
 // ============================================================================
-#define NAV_MODE_AUTONOMOUS_LSRB 0    // Autonomous Left-Hand Rule (LSRB) - default for unknown/changed maps
+#define NAV_MODE_AUTONOMOUS_LSRB 0    // Autonomous Left-Hand Rule (LSRB) - for unknown mazes
 #define NAV_MODE_AUTONOMOUS_RSLB 1    // Autonomous Right-Hand Rule (RSLB)
-#define NAV_MODE_CUSTOM_PATH     2    // Pre-programmed or user-entered turn sequence
-#define NAV_MODE_PID_LINE        3    // Standard PID Line Follower
+#define NAV_MODE_CUSTOM_PATH     2    // Pre-programmed turn sequence
+#define NAV_MODE_PID_LINE        3    // Standard PID Line Follower (smooth continuous tracking)
 
-#define DEFAULT_NAV_MODE         NAV_MODE_AUTONOMOUS_LSRB
+#define DEFAULT_NAV_MODE         NAV_MODE_PID_LINE
 #define MAX_PATH_STEPS           64
 
 // Default route from Rulebook Map
@@ -99,14 +96,14 @@ static const uint8_t SENSOR_PINS[NUM_SENSORS] = {
 // ============================================================================
 //  Default Parameters
 // ============================================================================
-// With 5 sensors, error position ranges from -2000 to +2000.
-#define DEFAULT_KP              20.0f
-#define DEFAULT_KI              0.08f
-#define DEFAULT_KD              14.0f
+// With 5 sensors (1.5cm spacing), position error ranges from -2000 to +2000.
+#define DEFAULT_KP              16.0f
+#define DEFAULT_KI              0.04f
+#define DEFAULT_KD              12.0f
 
-#define DEFAULT_BASE_SPEED      150
-#define DEFAULT_MAX_SPEED       255
-#define DEFAULT_MIN_SPEED       0
+#define DEFAULT_BASE_SPEED      110  // Controlled, stable baseline speed
+#define DEFAULT_MAX_SPEED       220
+#define DEFAULT_MIN_SPEED       0    // 0 prevents violent spin-out; smooth differential braking (set negative in portal if pivot turns needed)
 
 #define DEFAULT_RAW_MIN         0
 #define DEFAULT_RAW_MAX         4095
@@ -114,6 +111,8 @@ static const uint8_t SENSOR_PINS[NUM_SENSORS] = {
 // Scaling factor for PID calculation: correction = (P + I + D) / PID_SCALE_DIVISOR
 #define PID_SCALE_DIVISOR       200.0f
 #define PID_ANTI_WINDUP_LIMIT   10000.0f
+#define LINE_NOISE_FLOOR        60   // Reject background noise on white surface
+#define LINE_MIN_SUM            100  // Minimum cumulative norm to declare line detected
 
 // ============================================================================
 //  Timing & Maze Navigation Configuration
@@ -123,7 +122,7 @@ static const uint8_t SENSOR_PINS[NUM_SENSORS] = {
 #define CALIBRATION_DURATION_MS 10000  // 10 seconds calibration sweep
 
 #define JUNCTION_INCH_TIME_MS   110    // Inching time to align wheels with junction
-#define TURN_SPEED              140    // PWM speed during pivot turns and U-turns
+#define TURN_SPEED              130    // PWM speed during pivot turns and U-turns
 #define TURN_TIMEOUT_MS         2000   // Timeout for in-place turns
 #define END_ZONE_INCH_MS        450    // Inching duration to confirm Zone B large black square
 #define CHECKPOINT_DEBOUNCE_MS  1000   // Minimum time between checkpoint triggers

@@ -44,6 +44,7 @@ void resetParametersToDefaults(RobotParameters& params) {
     params.isCalibrated = 0;
 
     for (int i = 0; i < NUM_SENSORS; i++) {
+        params.sensorPins[i] = SENSOR_PINS[i];
         params.minVal[i] = DEFAULT_RAW_MIN;
         params.maxVal[i] = DEFAULT_RAW_MAX;
         params.thresh[i] = (DEFAULT_RAW_MIN + DEFAULT_RAW_MAX) / 2;
@@ -57,12 +58,16 @@ void resetParametersToDefaults(RobotParameters& params) {
     params.minSpeed = DEFAULT_MIN_SPEED;
     params.maxSpeed = DEFAULT_MAX_SPEED;
 
+    params.invertLeftMotor = 0;
+    params.invertRightMotor = 0;
+    params.swapMotors = 0;
+
     params.invertLine = 0; // Black line on white surface default
     params.navMode = DEFAULT_NAV_MODE;
     strncpy(params.customPath, DEFAULT_RULEBOOK_ROUTE, sizeof(params.customPath) - 1);
     params.customPath[sizeof(params.customPath) - 1] = '\0';
 
-    Serial.println("[NVS] Parameters reset to factory defaults (5 IR sensors)");
+    Serial.println("[NVS] Parameters reset to factory defaults (5 IR sensors, LFR9)");
 }
 
 bool isCalibrationValid(const RobotParameters& params) {
@@ -81,14 +86,14 @@ bool isCalibrationValid(const RobotParameters& params) {
 
 bool loadParameters(RobotParameters& params) {
     size_t len = sizeof(RobotParameters);
-    if (!s_prefs.isKey("params5")) {
-        Serial.println("[NVS] No v3.0 (5-IR) parameters found. Initializing defaults...");
+    if (!s_prefs.isKey("params9")) {
+        Serial.println("[NVS] No v3.0 (params9) parameters found. Initializing defaults...");
         resetParametersToDefaults(params);
         saveParameters(params);
         return false;
     }
 
-    size_t readBytes = s_prefs.getBytes("params5", &params, len);
+    size_t readBytes = s_prefs.getBytes("params9", &params, len);
     if (readBytes != len || params.magic != PARAMS_MAGIC) {
         Serial.println("[NVS] Parameters corrupted or invalid magic. Resetting...");
         resetParametersToDefaults(params);
@@ -98,6 +103,10 @@ bool loadParameters(RobotParameters& params) {
 
     Serial.printf("[NVS] Loaded 5-IR parameters. Calibrated=%u, NavMode=%u, Route='%s', Kp=%.2f, Ki=%.3f, Kd=%.2f, BaseSpeed=%d\n",
                   params.isCalibrated, params.navMode, params.customPath, params.kp, params.ki, params.kd, params.baseSpeed);
+    Serial.printf("[NVS] Sensor Pins [S0-S4]: %u, %u, %u (Center), %u, %u\n",
+                  params.sensorPins[0], params.sensorPins[1], params.sensorPins[2], params.sensorPins[3], params.sensorPins[4]);
+    Serial.printf("[NVS] Motor Polarity: InvL=%u, InvR=%u, SwapLR=%u\n",
+                  params.invertLeftMotor, params.invertRightMotor, params.swapMotors);
     Serial.print("[NVS] Thresholds [S0-S4]: ");
     for (int i = 0; i < NUM_SENSORS; i++) {
         Serial.printf("%u ", params.thresh[i]);
@@ -108,9 +117,9 @@ bool loadParameters(RobotParameters& params) {
 
 bool saveParameters(const RobotParameters& params) {
     size_t len = sizeof(RobotParameters);
-    size_t written = s_prefs.putBytes("params5", &params, len);
+    size_t written = s_prefs.putBytes("params9", &params, len);
     if (written == len) {
-        Serial.println("[NVS] Parameters successfully saved to NVS (params5).");
+        Serial.println("[NVS] Parameters successfully saved to NVS (params9).");
         return true;
     } else {
         Serial.printf("[NVS] ERROR saving parameters! Written: %u / Expected: %u\n", (unsigned int)written, (unsigned int)len);
@@ -190,3 +199,79 @@ void cancelCalibration() {
     s_calibrating = false;
     Serial.println("[CALIB] Calibration cancelled.");
 }
+
+// ----------------------------------------------------------------------------
+//  Sensor Order Auto-Detection
+// ----------------------------------------------------------------------------
+static bool s_detectingOrder = false;
+static uint32_t s_detectStartTime = 0;
+static uint8_t s_detectedOrder[NUM_SENSORS] = {0};
+static uint8_t s_detectedCount = 0;
+static const uint8_t CANDIDATE_PINS[5] = {33, 32, 35, 34, 39};
+
+void startSensorDetection() {
+    s_detectingOrder = true;
+    s_detectStartTime = millis();
+    s_detectedCount = 0;
+    for (int i = 0; i < NUM_SENSORS; i++) {
+        s_detectedOrder[i] = 0;
+    }
+    Serial.println("[CALIB] Sensor order auto-detection started! Slowly slide robot from LEFT to RIGHT over the black line...");
+}
+
+bool updateSensorDetection() {
+    if (!s_detectingOrder) return false;
+
+    if (millis() - s_detectStartTime > 10000) {
+        s_detectingOrder = false;
+        Serial.println("[CALIB] Sensor auto-detection timed out.");
+        return false;
+    }
+
+    for (int c = 0; c < 5; c++) {
+        uint8_t pin = CANDIDATE_PINS[c];
+        uint16_t val = readSensorRaw(pin);
+
+        // Strong black detection threshold
+        if (val > 1500) {
+            bool alreadyAdded = false;
+            for (int k = 0; k < s_detectedCount; k++) {
+                if (s_detectedOrder[k] == pin) {
+                    alreadyAdded = true;
+                    break;
+                }
+            }
+            if (!alreadyAdded && s_detectedCount < NUM_SENSORS) {
+                s_detectedOrder[s_detectedCount] = pin;
+                Serial.printf("[CALIB] Order Slot S%u -> GPIO %u (raw=%u)\n", s_detectedCount, pin, val);
+                s_detectedCount++;
+            }
+        }
+    }
+
+    if (s_detectedCount >= NUM_SENSORS) {
+        s_detectingOrder = false;
+        for (int i = 0; i < NUM_SENSORS; i++) {
+            g_params.sensorPins[i] = s_detectedOrder[i];
+        }
+        saveParameters(g_params);
+        g_pid.updateParams(g_params);
+        Serial.printf("[CALIB] Sensor order successfully auto-detected: [%u, %u, %u, %u, %u]\n",
+                      g_params.sensorPins[0], g_params.sensorPins[1], g_params.sensorPins[2],
+                      g_params.sensorPins[3], g_params.sensorPins[4]);
+        return true;
+    }
+
+    return false;
+}
+
+bool isDetectingSensors() {
+    return s_detectingOrder;
+}
+
+void getDetectedPins(uint8_t pins[NUM_SENSORS]) {
+    for (int i = 0; i < NUM_SENSORS; i++) {
+        pins[i] = s_detectedOrder[i];
+    }
+}
+
