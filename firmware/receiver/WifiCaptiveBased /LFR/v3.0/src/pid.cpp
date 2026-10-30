@@ -18,7 +18,9 @@ PIDController::PIDController()
       m_lastCheckpointTime(0),
       m_allBlackStartTime(0),
       m_allBlackCandidate(false),
-      m_pathLength(0)
+      m_pathLength(0),
+      m_cycleTurnCount(0),
+      m_lastTurnChar(0)
 {
     memset(&m_params, 0, sizeof(m_params));
     memset(&m_readings, 0, sizeof(m_readings));
@@ -43,6 +45,9 @@ void PIDController::reset() {
     m_lastCheckpointTime = 0;
     m_allBlackStartTime = 0;
     m_allBlackCandidate = false;
+
+    m_cycleTurnCount = 0;
+    m_lastTurnChar = 0;
 
     m_pathLength = 0;
     memset(m_path, 0, sizeof(m_path));
@@ -184,10 +189,45 @@ TurnAction PIDController::decideTurnAtJunction(bool canLeft, bool canStraight, b
         return TURN_UTURN_180;
     }
 
-    // Mode 0: Autonomous Left-Hand Rule (LSRB) - Default for unknown/changed maps
-    if (canLeft)     return TURN_LEFT_90;
-    if (canStraight) return TURN_STRAIGHT;
-    if (canRight)    return TURN_RIGHT_90;
+    // Mode 3: Standard PID Line Follower - at non-branching elbow corners (canLeft != canRight),
+    // automatically follow the bend! If multiple branches exist, default to straight, then left, then right.
+    if (m_params.navMode == NAV_MODE_PID_LINE) {
+        if (canStraight) return TURN_STRAIGHT;
+        if (canLeft && !canRight) return TURN_LEFT_90;
+        if (canRight && !canLeft) return TURN_RIGHT_90;
+        if (canLeft) return TURN_LEFT_90;
+        if (canRight) return TURN_RIGHT_90;
+        return TURN_NONE;
+    }
+
+    // Mode 0: Autonomous Left-Hand Rule (LSRB) with Smart Loop-Breaking
+    // If we have taken 3 or more 'L' turns in succession (potential loop cycle)
+    // and an alternative branch (Straight or Right) is available:
+    if (m_cycleTurnCount >= 3) {
+        if (canStraight) {
+            Serial.println("[LOOP BREAKER] Cycle detected! Suppressing 'L', forcing 'S' to escape loop.");
+            m_cycleTurnCount = 0;
+            return TURN_STRAIGHT;
+        }
+        if (canRight) {
+            Serial.println("[LOOP BREAKER] Cycle detected! Suppressing 'L', forcing 'R' to escape loop.");
+            m_cycleTurnCount = 0;
+            return TURN_RIGHT_90;
+        }
+    }
+
+    if (canLeft) {
+        m_cycleTurnCount++;
+        return TURN_LEFT_90;
+    }
+    if (canStraight) {
+        m_cycleTurnCount = 0;
+        return TURN_STRAIGHT;
+    }
+    if (canRight) {
+        m_cycleTurnCount = 0;
+        return TURN_RIGHT_90;
+    }
     return TURN_UTURN_180;
 }
 
@@ -208,80 +248,130 @@ void PIDController::executeTurn(TurnAction action) {
     m_readings.status = LINE_TURNING;
     int16_t turnSpd = TURN_SPEED;
     uint8_t centerPin = (m_params.sensorPins[SENSOR_CENTER_INDEX] != 0) ? m_params.sensorPins[SENSOR_CENTER_INDEX] : SENSOR_CENTER_PIN;
+    bool invert = (m_params.invertLine != 0);
 
     if (action == TURN_LEFT_90) {
         if (recordTurn) logTurn('L');
-        Serial.println("[NAV] Executing 90-deg LEFT turn...");
+        Serial.println("[NAV] Executing LEFT turn...");
         // Pivot left: Left motor reverse, Right motor forward
         setMotorSpeed(-turnSpd, turnSpd);
-        delay(150); // Blind turn time to move off current line
-        notifyMotorSafetyFeed();
 
+        // 1. Brief impulse (35ms) to begin rotation
         uint32_t start = millis();
-        bool acquired = false;
-        while (millis() - start < TURN_TIMEOUT_MS) {
-            uint16_t rawC = readSensorRaw(centerPin);
-            uint16_t normC = normalizeSensor(rawC, m_params.minVal[SENSOR_CENTER_INDEX], m_params.maxVal[SENSOR_CENTER_INDEX], m_params.invertLine != 0);
-            if (normC > 500) {
-                acquired = true;
-                break; // Center sensor re-acquired line
-            }
+        while (millis() - start < 35) {
             notifyMotorSafetyFeed();
             delay(5);
         }
+
+        // 2. Wait until center sensor leaves old line
+        while (millis() - start < 250) {
+            uint16_t cNorm = normalizeSensor(readSensorRaw(centerPin), m_params.minVal[SENSOR_CENTER_INDEX], m_params.maxVal[SENSOR_CENTER_INDEX], invert);
+            if (cNorm < 300) break;
+            notifyMotorSafetyFeed();
+            delay(5);
+        }
+
+        // 3. Actively acquire new line (locks cleanly onto 30-deg, 45-deg, 90-deg branches)
+        bool acquired = false;
+        while (millis() - start < TURN_TIMEOUT_MS) {
+            uint16_t cNorm = normalizeSensor(readSensorRaw(centerPin), m_params.minVal[SENSOR_CENTER_INDEX], m_params.maxVal[SENSOR_CENTER_INDEX], invert);
+            if (cNorm > 450) {
+                acquired = true;
+                break;
+            }
+            notifyMotorSafetyFeed();
+            delay(4);
+        }
+
+        // Active counter-brake to kill rotational inertia
+        setMotorSpeed(turnSpd / 2, -turnSpd / 2);
+        delay(25);
+        setMotorSpeed(0, 0);
+
         if (!acquired) {
-            Serial.println("[NAV] Left turn timed out without line re-acquisition. Returning...");
-            setMotorSpeed(turnSpd, -turnSpd);
-            delay(150);
+            Serial.println("[NAV] Left turn timed out without line re-acquisition.");
         }
     } else if (action == TURN_RIGHT_90) {
         if (recordTurn) logTurn('R');
-        Serial.println("[NAV] Executing 90-deg RIGHT turn...");
+        Serial.println("[NAV] Executing RIGHT turn...");
         // Pivot right: Left motor forward, Right motor reverse
         setMotorSpeed(turnSpd, -turnSpd);
-        delay(150);
-        notifyMotorSafetyFeed();
 
+        // 1. Brief impulse (35ms) to begin rotation
         uint32_t start = millis();
-        bool acquired = false;
-        while (millis() - start < TURN_TIMEOUT_MS) {
-            uint16_t rawC = readSensorRaw(centerPin);
-            uint16_t normC = normalizeSensor(rawC, m_params.minVal[SENSOR_CENTER_INDEX], m_params.maxVal[SENSOR_CENTER_INDEX], m_params.invertLine != 0);
-            if (normC > 500) {
-                acquired = true;
-                break; // Center sensor re-acquired line
-            }
+        while (millis() - start < 35) {
             notifyMotorSafetyFeed();
             delay(5);
         }
+
+        // 2. Wait until center sensor leaves old line
+        while (millis() - start < 250) {
+            uint16_t cNorm = normalizeSensor(readSensorRaw(centerPin), m_params.minVal[SENSOR_CENTER_INDEX], m_params.maxVal[SENSOR_CENTER_INDEX], invert);
+            if (cNorm < 300) break;
+            notifyMotorSafetyFeed();
+            delay(5);
+        }
+
+        // 3. Actively acquire new line
+        bool acquired = false;
+        while (millis() - start < TURN_TIMEOUT_MS) {
+            uint16_t cNorm = normalizeSensor(readSensorRaw(centerPin), m_params.minVal[SENSOR_CENTER_INDEX], m_params.maxVal[SENSOR_CENTER_INDEX], invert);
+            if (cNorm > 450) {
+                acquired = true;
+                break;
+            }
+            notifyMotorSafetyFeed();
+            delay(4);
+        }
+
+        // Active counter-brake
+        setMotorSpeed(-turnSpd / 2, turnSpd / 2);
+        delay(25);
+        setMotorSpeed(0, 0);
+
         if (!acquired) {
-            Serial.println("[NAV] Right turn timed out without line re-acquisition. Returning...");
-            setMotorSpeed(-turnSpd, turnSpd);
-            delay(150);
+            Serial.println("[NAV] Right turn timed out without line re-acquisition.");
         }
     } else if (action == TURN_UTURN_180) {
         if (recordTurn) logTurn('B');
+        m_cycleTurnCount = 0; // Dead end encountered, reset cycle counter
         Serial.println("[NAV] Dead end! Executing 180-deg U-TURN...");
         // Pivot around: Left motor reverse, Right motor forward
         setMotorSpeed(-turnSpd, turnSpd);
-        delay(280); // Blind turn time
-        notifyMotorSafetyFeed();
 
+        // 1. Impulse
         uint32_t start = millis();
-        while (millis() - start < TURN_TIMEOUT_MS) {
-            uint16_t rawC = readSensorRaw(centerPin);
-            uint16_t normC = normalizeSensor(rawC, m_params.minVal[SENSOR_CENTER_INDEX], m_params.maxVal[SENSOR_CENTER_INDEX], m_params.invertLine != 0);
-            if (normC > 500) {
-                break; // Center sensor re-acquired line
-            }
+        while (millis() - start < 150) {
             notifyMotorSafetyFeed();
             delay(5);
         }
+
+        // 2. Clear old line
+        while (millis() - start < 400) {
+            uint16_t cNorm = normalizeSensor(readSensorRaw(centerPin), m_params.minVal[SENSOR_CENTER_INDEX], m_params.maxVal[SENSOR_CENTER_INDEX], invert);
+            if (cNorm < 300) break;
+            notifyMotorSafetyFeed();
+            delay(5);
+        }
+
+        // 3. Acquire 180-deg line
+        while (millis() - start < TURN_TIMEOUT_MS) {
+            uint16_t cNorm = normalizeSensor(readSensorRaw(centerPin), m_params.minVal[SENSOR_CENTER_INDEX], m_params.maxVal[SENSOR_CENTER_INDEX], invert);
+            if (cNorm > 450) {
+                break;
+            }
+            notifyMotorSafetyFeed();
+            delay(4);
+        }
+
+        // Active counter-brake
+        setMotorSpeed(turnSpd / 2, -turnSpd / 2);
+        delay(30);
+        setMotorSpeed(0, 0);
     }
 
     // Brief brake & reset integral
-    setMotorSpeed(0, 0);
-    delay(40);
+    delay(20);
     m_integral = 0.0f;
     m_lastError = 0.0f;
     notifyMotorSafetyFeed();
@@ -325,50 +415,7 @@ void PIDController::compute(const uint16_t raw[NUM_SENSORS],
     }
 
     // ========================================================================
-    //  Case 1: ALL / MOST SENSORS ON BLACK (Zone B End Square vs Checkpoint)
-    // ========================================================================
-    // If 4 or 5 out of 5 sensors see the line:
-    if (countOnLine >= 4 || sum > 3400) {
-        if (!m_allBlackCandidate) {
-            m_allBlackCandidate = true;
-            m_allBlackStartTime = millis();
-        }
-
-        // Check if sustained continuously across end zone (large black square)
-        if (millis() - m_allBlackStartTime >= END_ZONE_INCH_MS) {
-            // Reached Zone B: Large Black Square!
-            m_readings.status = LINE_END_ZONE;
-            m_readings.runFinished = true;
-            outLeftSpeed = 0;
-            outRightSpeed = 0;
-            Serial.println("\n***************************************************");
-            Serial.println("   [ZONE B REACHED] End Point Detected! RUN COMPLETE!   ");
-            Serial.printf("   Checkpoints logged: %u / 4\n", m_readings.checkpoints);
-            Serial.printf("   Shortest Solved Route: %s\n", m_readings.solvedPath);
-            Serial.println("***************************************************\n");
-            return;
-        }
-
-        // Inch forward slightly to confirm Zone B
-        outLeftSpeed = m_params.baseSpeed / 2;
-        outRightSpeed = m_params.baseSpeed / 2;
-        return;
-    }
-
-    // If we were checking an all-black zone and now it cleared:
-    if (m_allBlackCandidate) {
-        m_allBlackCandidate = false;
-        // This was a transverse line (checkpoint)
-        if (millis() - m_lastCheckpointTime > CHECKPOINT_DEBOUNCE_MS) {
-            m_lastCheckpointTime = millis();
-            m_readings.checkpoints++;
-            m_readings.status = LINE_CHECKPOINT;
-            Serial.printf("[CHECKPOINT] Passed checkpoint #%u (Transverse line)\n", m_readings.checkpoints);
-        }
-    }
-
-    // ========================================================================
-    //  Case 2: DEAD END (All sensors on white)
+    //  Case 1: DEAD END OR LINE LOST (All sensors on white)
     // ========================================================================
     if (countOnLine == 0 && sum < LINE_MIN_SUM) {
         if (!m_wasLineLost) {
@@ -421,39 +468,102 @@ void PIDController::compute(const uint16_t raw[NUM_SENSORS],
     m_wasLineLost = false;
 
     // ========================================================================
-    //  Case 3: TURNS & JUNCTIONS (Maze Navigation: Left, Right, T, 4-Way Cross)
+    //  Case 2: JUNCTIONS, TURNS, CROSSBARS & ZONE B CLASSIFIER
     // ========================================================================
-    if (m_params.navMode != NAV_MODE_PID_LINE) {
-        // True 90-degree branch requires outer + near sensors active
-        bool leftDetected = (m_readings.norm[0] > 600 && m_readings.norm[1] > 400);
-        bool rightDetected = (m_readings.norm[4] > 600 && m_readings.norm[3] > 400);
+    // Active line branches or transverse bars:
+    bool leftDetected = (m_readings.norm[0] > 450 || (m_readings.norm[0] > 350 && m_readings.norm[1] > 380));
+    bool rightDetected = (m_readings.norm[4] > 450 || (m_readings.norm[4] > 350 && m_readings.norm[3] > 380));
+    bool crossDetected = (countOnLine >= 4 || sum > 3200);
 
-        if (leftDetected || rightDetected) {
-            // Inch forward to place drive axle over junction center
-            setMotorSpeed(m_params.baseSpeed, m_params.baseSpeed);
-            delay(JUNCTION_INCH_TIME_MS);
+    if (leftDetected || rightDetected || crossDetected) {
+        // Inch forward by axle-to-sensor offset (approx 35mm) to place drive axle over junction center
+        setMotorSpeed(m_params.baseSpeed, m_params.baseSpeed);
+        delay(JUNCTION_INCH_TIME_MS);
+        notifyMotorSafetyFeed();
+
+        // Sample all sensors at junction center
+        uint8_t postCount = 0;
+        uint32_t postSum = 0;
+        for (int i = 0; i < NUM_SENSORS; i++) {
+            uint8_t pin = (m_params.sensorPins[i] != 0) ? m_params.sensorPins[i] : SENSOR_PINS[i];
+            uint16_t n = normalizeSensor(readSensorRaw(pin), m_params.minVal[i], m_params.maxVal[i], invert);
+            postSum += (n >= LINE_NOISE_FLOOR) ? n : 0;
+            if (n >= 400) postCount++;
+        }
+
+        // --------------------------------------------------------------------
+        //  1. Check for TRUE Zone B (Large Black Square >= 25cm x 25cm)
+        // --------------------------------------------------------------------
+        if (postCount >= 4 && postSum > 3400) {
+            // Inch forward another 100ms: only a massive square remains fully black!
+            setMotorSpeed(m_params.baseSpeed / 2, m_params.baseSpeed / 2);
+            delay(100);
             notifyMotorSafetyFeed();
 
-            // Re-read center sensor after inching to check if forward path exists
-            uint16_t afterC = normalizeSensor(readSensorRaw(centerPin),
-                                              m_params.minVal[SENSOR_CENTER_INDEX],
-                                              m_params.maxVal[SENSOR_CENTER_INDEX], invert);
-            bool canStraight = (afterC > 400);
-
-            if (leftDetected && rightDetected) {
-                m_readings.status = LINE_INTERSECTION;
-            } else if (leftDetected) {
-                m_readings.status = LINE_SHARP_LEFT;
-            } else {
-                m_readings.status = LINE_SHARP_RIGHT;
+            uint8_t confirmCount = 0;
+            for (int i = 0; i < NUM_SENSORS; i++) {
+                uint8_t pin = (m_params.sensorPins[i] != 0) ? m_params.sensorPins[i] : SENSOR_PINS[i];
+                uint16_t n = normalizeSensor(readSensorRaw(pin), m_params.minVal[i], m_params.maxVal[i], invert);
+                if (n >= 400) confirmCount++;
             }
 
-            TurnAction action = decideTurnAtJunction(leftDetected, canStraight, rightDetected);
-            executeTurn(action);
+            if (confirmCount >= 4) {
+                // Confirmed Zone B End Point!
+                m_readings.status = LINE_END_ZONE;
+                m_readings.runFinished = true;
+                outLeftSpeed = 0;
+                outRightSpeed = 0;
+                emergencyStop();
+                Serial.println("\n***************************************************");
+                Serial.println("   [ZONE B REACHED] End Point Detected! RUN COMPLETE!   ");
+                Serial.printf("   Checkpoints logged: %u / 4\n", m_readings.checkpoints);
+                Serial.printf("   Shortest Solved Route: %s\n", m_readings.solvedPath);
+                Serial.println("***************************************************\n");
+                return;
+            }
+        }
+
+        // --------------------------------------------------------------------
+        //  2. Check for Junctions (T-Junction, 4-Way Cross, Branches, Checkpoints)
+        // --------------------------------------------------------------------
+        uint16_t cNorm = normalizeSensor(readSensorRaw(centerPin), m_params.minVal[SENSOR_CENTER_INDEX], m_params.maxVal[SENSOR_CENTER_INDEX], invert);
+        bool canStraight = (cNorm > 400);
+        bool canLeft = leftDetected || (crossDetected && !canStraight);
+        bool canRight = rightDetected || (crossDetected && !canStraight);
+
+        // Check if this was purely a Transverse Checkpoint Line (rulebook: 4 checkpoints)
+        if (crossDetected && canStraight && !leftDetected && !rightDetected) {
+            if (millis() - m_lastCheckpointTime > CHECKPOINT_DEBOUNCE_MS) {
+                m_lastCheckpointTime = millis();
+                m_readings.checkpoints++;
+                m_readings.status = LINE_CHECKPOINT;
+                Serial.printf("[CHECKPOINT] Passed checkpoint #%u (Transverse line)\n", m_readings.checkpoints);
+            }
             outLeftSpeed = m_params.baseSpeed;
             outRightSpeed = m_params.baseSpeed;
             return;
         }
+
+        // Branching / Turning Junction
+        if (canLeft && canRight && !canStraight) {
+            m_readings.status = LINE_INTERSECTION;
+            Serial.println("[JUNCTION] T-Junction detected (Left + Right, no straight)!");
+        } else if (canLeft && canRight && canStraight) {
+            m_readings.status = LINE_INTERSECTION;
+            Serial.println("[JUNCTION] 4-Way Cross (+) detected!");
+        } else if (canLeft) {
+            m_readings.status = LINE_SHARP_LEFT;
+            Serial.println("[JUNCTION] Left branch / turn detected!");
+        } else if (canRight) {
+            m_readings.status = LINE_SHARP_RIGHT;
+            Serial.println("[JUNCTION] Right branch / turn detected!");
+        }
+
+        TurnAction action = decideTurnAtJunction(canLeft, canStraight, canRight);
+        executeTurn(action);
+        outLeftSpeed = m_params.baseSpeed;
+        outRightSpeed = m_params.baseSpeed;
+        return;
     }
 
     // ========================================================================

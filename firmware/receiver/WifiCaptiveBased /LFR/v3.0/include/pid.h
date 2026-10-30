@@ -92,6 +92,10 @@ private:
     char m_path[MAX_PATH_STEPS];
     uint8_t m_pathLength;
 
+    // Loop-breaking cycle detector
+    uint8_t m_cycleTurnCount;
+    char m_lastTurnChar;
+
     // Navigation decision helper
     TurnAction decideTurnAtJunction(bool canLeft, bool canStraight, bool canRight);
 };

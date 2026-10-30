@@ -236,17 +236,24 @@ a{color:#6bf}
       <div class="field">
         <label>Routing Strategy</label>
         <select id="sel_nav" onchange="toggleRouteBox()">
-          <option value="3" selected>Standard PID Line Follower (Smooth Continuous Tracking) [Recommended]</option>
-          <option value="0">Autonomous Left-Hand Rule (LSRB) [Unknown Mazes Only]</option>
-          <option value="1">Autonomous Right-Hand Rule (RSLB) [Unknown Mazes Only]</option>
-          <option value="2">Custom / Pre-Programmed Route Sequence</option>
+          <option value="2">Custom / Pre-Programmed Route Sequence (Fastest for Competition - Tie-Breaker)</option>
+          <option value="0">Autonomous Left-Hand Rule (LSRB with Loop-Breaker)</option>
+          <option value="1">Autonomous Right-Hand Rule (RSLB with Loop-Breaker)</option>
+          <option value="3" selected>Standard PID Line Follower (Smooth Continuous Tracking)</option>
         </select>
-        <div class="hint" style="margin-top:4px">Standard PID: Smooth proportional line tracking. Autonomous LSRB/RSLB: Executes 90-deg pivot turns at maze junctions.</div>
+        <div class="hint" style="margin-top:4px">Custom: Follows exact pre-programmed letters at each junction (ideal for 5-min prep). LSRB/RSLB: Autonomous maze solver with smart loop-breaker.</div>
       </div>
       <div class="field" id="box_customRoute">
-        <label>Custom Route Sequence (L = Left, R = Right, S = Straight)</label>
-        <input type="text" id="txt_route" maxlength="64" placeholder="e.g. RRLLRLSSLLRRLL" style="width:100%;padding:6px 8px;background:#1a1a1a;border:1px solid #333;border-radius:3px;color:#eee;font-family:'SF Mono',Consolas,monospace;font-size:13px;letter-spacing:1px;text-transform:uppercase">
-        <div class="hint">Type the turn sequence you see on the arena track during the 5-min prep window.</div>
+        <label>Custom Route Sequence (L = Left, R = Right, S = Straight, B = U-Turn)</label>
+        <input type="text" id="txt_route" maxlength="64" placeholder="e.g. L S R L R" style="width:100%;padding:6px 8px;background:#1a1a1a;border:1px solid #333;border-radius:3px;color:#eee;font-family:'SF Mono',Consolas,monospace;font-size:14px;letter-spacing:2px;text-transform:uppercase">
+        <div style="display:flex;gap:5px;margin-top:6px;flex-wrap:wrap">
+          <button type="button" class="btn" style="flex:1" onclick="addRouteChar('L')">+ Left (L)</button>
+          <button type="button" class="btn" style="flex:1" onclick="addRouteChar('S')">+ Straight (S)</button>
+          <button type="button" class="btn" style="flex:1" onclick="addRouteChar('R')">+ Right (R)</button>
+          <button type="button" class="btn" style="flex:1" onclick="addRouteChar('B')">+ Back (B)</button>
+          <button type="button" class="btn btn-stop" style="flex:0.7" onclick="$('txt_route').value=''">Clear</button>
+        </div>
+        <div class="hint" style="margin-top:4px">Tap the buttons above to build the turn path you see on the arena track during the 5-min prep window.</div>
       </div>
     </div>
 
@@ -390,6 +397,11 @@ function tab(name,el){
 function toggleRouteBox(){
   const isCustom = $('sel_nav').value === '2';
   $('box_customRoute').style.display = isCustom ? 'block' : 'none';
+}
+
+function addRouteChar(c){
+  const el = $('txt_route');
+  el.value = (el.value + c).toUpperCase();
 }
 
 function sv(k){
